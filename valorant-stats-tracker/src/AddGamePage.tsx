@@ -16,6 +16,9 @@ const agents = [...duelists, ...initiators, ...controllers, ...sentinels];
 
 export default function AddGamePage() {
   const [formData, setFormData] = useState({
+    title: "",
+    mapCount: 3,
+    mapNumber: 1,
     teamA: "",
     teamB: "",
     map: "",
@@ -61,12 +64,12 @@ export default function AddGamePage() {
     let formErrors: { [key: string]: string } = {};
 
     var canCountRounds = true;
-    if (formData.teamA === "" || formData.teamB === "") {
-      formErrors.selectTeams = "Must select two teams";
+    if (formData.teamA === "") {
+      formErrors.selectTeams = "Must select team A";
       canCountRounds = false;
     }
-    else if (formData.teamA === formData.teamB) {
-      formErrors.teamA = "Team A and Team B must be different.";
+    else if(formData.teamB === "") {
+      formErrors.selectTeams = "Must select team B";
       canCountRounds = false;
     }
 
@@ -94,7 +97,14 @@ export default function AddGamePage() {
       else {
         formData.score = `${teamARounds}-${teamBRounds}`
       }
+    }
 
+    if(teamAAgents.filter(x => x !== "").length < 5) {
+      formErrors.missingAgentsTeamA = "Missing agents for team A"
+    }
+    
+    if(teamBAgents.filter(x => x !== "").length < 5) {
+      formErrors.missingAgentsTeamB = "Missing agents for team B"
     }
 
     if (Object.keys(formErrors).length > 0) {
@@ -134,7 +144,7 @@ export default function AddGamePage() {
           key={index}
           value={selected}
           onChange={(e) => handleAgentChange(team, index, e.target.value)}
-          className="p-2 border rounded w-48 text-black mb-2"
+          className="p-2 border rounded w-1/5 text-black mb-2"
         >
           <option value="">Select Agent</option>
           {availableAgents.map((agent) => (
@@ -147,58 +157,128 @@ export default function AddGamePage() {
     });
   };
   
+  const FixMapNumber = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+
+    handleChange(e);
+    const newValue = parseInt(e.target.value);
+    if(formData.mapNumber > newValue) {
+      setFormData((prev) => ({ ...prev, mapNumber: newValue }));
+    }
+  }
 
   const getRoundColor = (winner: string) => {
-    if (winner === formData.teamA && formData.teamA != "") return blue + " text-white hover:!" + blue;
-    if (winner === formData.teamB && formData.teamB != "") return red + " text-white hover:!" + red;
-    return empty + " text-white hover:!" + empty; // fallback for no winner
+    if (winner === formData.teamA && formData.teamA != "") return blue + " text-white hover:" + blue;
+    if (winner === formData.teamB && formData.teamB != "") return red + " text-white hover:" + red;
+    return empty + " text-white hover:" + empty; // fallback for no winner
   };
 
   return (
     <div className="min-h-screen w-screen p-4 space-y-4 text-black bg-white">
-      <h1 className="text-2xl font-bold">Add a Valorant Game</h1>
 
-      <div className="flex gap-4">
-        <select
-          name="teamA"
-          value={formData.teamA}
+      <div>
+        <h1 className="text-2xl font-bold">Add a Valorant Game</h1>
+        <div className="flex items-center gap-x-4">
+
+        {/* Add a list of tournaments that can be selected*/}
+        <Input
+          name="title"
+          placeholder="Game Title (e.g., Grand Finals)"
+          value={formData.title}
           onChange={handleChange}
-          className="flex-1 border rounded-md p-2 bg-white text-black"
-        >
-          <option value="">Select Team A</option>
-          {teams.map((team) => (
-            <option key={team} value={team}>
-              {team}
-            </option>
-          ))}
-        </select>
+          className="text-black w-1/2"
+        />
         <select
-          name="teamB"
-          value={formData.teamB}
-          onChange={handleChange}
-          className="flex-1 border rounded-md p-2 bg-white text-black"
+          name="mapCount"
+          value={formData.mapCount}
+          onChange={FixMapNumber}
+          className="border rounded-md p-2 text-black"
         >
-          <option value="">Select Team B</option>
-          {teams.map((team) => (
-            <option key={team} value={team}>
-              {team}
-            </option>
-          ))}
+          <option value="1">BO1</option>
+          <option value="3">BO3</option>
+          <option value="5">BO5</option>
         </select>
+        <div>Map :</div>
+        <input
+          type="number"
+          name="mapNumber"
+          value={formData.mapNumber}
+          onChange={handleChange}
+          className="border rounded-md p-2 text-black"
+          min="1"
+          step="1"
+          max={formData.mapCount}
+        />
       </div>
 
-      {errors.selectTeams && <div className="text-red-600 text-sm">{errors.selectTeams}</div>} {}
-      {errors.teamA && <div className="text-red-600 text-sm">{errors.teamA}</div>} {}
+      </div>
+
+      <div className="flex w-full">
+        <div className="w-1/2 bg-blue-100 p-4">
+          {/* Team A Name Selector*/}
+          <select
+            name="teamA"
+            value={formData.teamA}
+            onChange={handleChange}
+            className="flex-1 border rounded-md p-2 bg-white text-black"
+          >
+            <option value="">Select Team A</option>
+            {teams
+              .filter((team) => team !== formData.teamB)
+              .map((team) => (
+              <option key={team} value={team}>
+                {team}
+              </option>
+            ))}
+          </select>
+
+          {errors.selectTeamA && <div className="text-red-600 text-sm">{errors.selectTeamA}</div>}
+          {/* Team A Agent Selectors*/}
+
+          <div>
+            <h2 className="font-semibold mb-2">Team A Agents</h2>
+            {renderAgentDropdowns(teamAAgents, "A")}
+          </div>
+          {errors.missingAgentsTeamA && <div className="text-red-600 text-sm">{errors.missingAgentsTeamA}</div>}
+        </div>
+
+        <div className="w-1/2 bg-red-100 p-4">
+
+          {/* Team B Name Selector*/}
+          <select
+            name="teamB"
+            value={formData.teamB}
+            onChange={handleChange}
+            className="flex-1 border rounded-md p-2 bg-white text-black"
+            >
+            <option value="">Select Team B</option>
+            {teams
+              .filter((team) => team !== formData.teamA)
+              .map((team) => (
+                <option key={team} value={team}>
+                {team}
+              </option>
+            ))}
+          </select>
+
+          {errors.selectTeamB && <div className="text-red-600 text-sm">{errors.selectTeamB}</div>}
+          {/* Team B Agent Selectors*/}
+          <div>
+            <h2 className="font-semibold mb-2">Team B Agents</h2>
+            {renderAgentDropdowns(teamBAgents, "B")}
+          </div>
+          {errors.missingAgentsTeamB && <div className="text-red-600 text-sm">{errors.missingAgentsTeamB}</div>}
+
+        </div>
+      </div>
+
+
+      <div className="flex gap-4">
+      </div>
+
 
       <div className="flex gap-12">
-        <div>
-          <h2 className="font-semibold mb-2">Team A Agents</h2>
-          {renderAgentDropdowns(teamAAgents, "A")}
-        </div>
-        <div>
-          <h2 className="font-semibold mb-2">Team B Agents</h2>
-          {renderAgentDropdowns(teamBAgents, "B")}
-        </div>
+        
+        
       </div>
 
       <select
