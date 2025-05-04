@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
-import { useGameContext } from "./GameContext";
+import DragAndDropList from "@/components/ui/DragDropList"
+import { useGameContext } from "@/GameContext";
 
 const teams = ["G2", "SEN", "C9", "NRG", "FURIA", "LEV", "MIBR", "2G", "100T", "LOUD", "EG", "KRU"];
 
@@ -172,6 +173,33 @@ export default function AddGamePage() {
     return empty + " text-white hover:" + empty; // fallback for no winner
   };
 
+  const options = ["A Site", "B Site", "Mid", "Flank", "Retake"];
+
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
+  const addItem = (item: string) => {
+    if (!selectedItems.includes(item)) {
+      setSelectedItems([...selectedItems, item]);
+    }
+  };
+
+  const removeItem = (index: number) => {
+    const updated = [...selectedItems];
+    updated.splice(index, 1);
+    setSelectedItems(updated);
+  };
+
+  const moveItem = (index: number, direction: "up" | "down") => {
+    const updated = [...selectedItems];
+    const target = direction === "up" ? index - 1 : index + 1;
+
+    if (target >= 0 && target < updated.length) {
+      [updated[index], updated[target]] = [updated[target], updated[index]];
+      setSelectedItems(updated);
+    }
+  };
+
+
   return (
     <div className="min-h-screen w-screen p-4 space-y-4 text-black bg-white">
 
@@ -271,16 +299,6 @@ export default function AddGamePage() {
         </div>
       </div>
 
-
-      <div className="flex gap-4">
-      </div>
-
-
-      <div className="flex gap-12">
-        
-        
-      </div>
-
       <select
         name="map"
         value={formData.map}
@@ -367,6 +385,10 @@ export default function AddGamePage() {
                   onChange={(e) => setDialogInput({ ...dialogInput, notes: e.target.value })}
                   className="text-black"
                 />
+                <DragAndDropList allowDuplicates={true}/>
+
+
+
                 <Button onClick={saveRoundDetails}>Save</Button>
               </>
             )}
