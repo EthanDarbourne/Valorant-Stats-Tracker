@@ -1,0 +1,16 @@
+Pass two teams to round and clutch dialogs
+
+
+
+
+
+Collect all data when saving map
+
+
+
+Extract common features to separate files
+
+
+
+Later:
+Load from/Save to database

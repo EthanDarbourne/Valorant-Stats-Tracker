@@ -363,7 +363,7 @@ export default function AddGamePage() {
       <Dialog open={activeRound !== null} onOpenChange={(open) => {
           if (!open) setActiveRound(null);
         }}>
-          <DialogContent className="space-y-4 text-black">
+          <DialogContent className="space-y-4 text-black max-h-[80vh] overflow-y-auto">
             {activeRound !== null && (
               <>
                 <DialogTitle>Round {activeRound + 1} Info</DialogTitle>
@@ -385,7 +385,7 @@ export default function AddGamePage() {
                   onChange={(e) => setDialogInput({ ...dialogInput, notes: e.target.value })}
                   className="text-black"
                 />
-                <DragAndDropList allowDuplicates={true}/>
+                <DragAndDropList allowDuplicates={true} hasClutchItem={true}/>
 
 
 

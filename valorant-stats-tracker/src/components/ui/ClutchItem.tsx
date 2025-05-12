@@ -1,15 +1,20 @@
 import React, { useState } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import DragAndDropList from "@/components/ui/DragDropList"
 
 const agents = ["Jett", "Clove", "Sova", "Raze", "Viper"];
+
+const clutches = ["1v1", "1v2", "1v3", "1v4", "1v5", "2v2", "2v3", "2v4", "2v5"]
 
 export default function ClutchItem() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [clutchType, setClutchType] = useState("1v1");
   const [players, setPlayers] = useState<string[]>(["", ""]);
-  const [cloveSmokes, setCloveSmokes] = useState(false);
+  const [cloveSmokesTeamA, setCloveSmokesTeamA] = useState(false);
+  const [cloveSmokesTeamB, setCloveSmokesTeamB] = useState(false);
   const [winner, setWinner] = useState<"A" | "B">("A");
+  const [teamInClutch, setTeamInClutch] = useState<"A" | "B">("A");
 
   const handleClick = (e: React.MouseEvent) => {
     if (e.shiftKey) {
@@ -33,9 +38,17 @@ export default function ClutchItem() {
           Clutch Item
         </li>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogTitle>Clutch Info</DialogTitle>
         <DialogDescription>Enter details about the clutch round.</DialogDescription>
+
+        <div className="flex items-center justify-between">
+            <label>In Clutch: Team {teamInClutch}</label>
+            <Switch
+              checked={teamInClutch === "B"}
+              onCheckedChange={(val) => setTeamInClutch(val ? "B" : "A")}
+            />
+          </div>
 
         <div className="space-y-4 text-black">
           <div>
@@ -49,10 +62,12 @@ export default function ClutchItem() {
               }}
               className="border p-2 rounded w-full"
             >
-              <option value="1v1">1v1</option>
-              <option value="2v2">2v2</option>
+              {clutches.map(x => (<option value={x}>x</option>))}
             </select>
           </div>
+
+        <DragAndDropList allowDuplicates={true} hasClutchItem={false}/>
+          
 
           {players.map((agent, index) => (
             <div key={index}>
@@ -73,10 +88,18 @@ export default function ClutchItem() {
           ))}
 
           <div className="flex items-center justify-between">
-            <label>Clove Smokes Available</label>
+            <label>Clove Smokes Available Team A</label>
             <Switch
-              checked={cloveSmokes}
-              onCheckedChange={setCloveSmokes}
+              checked={cloveSmokesTeamA}
+              onCheckedChange={setCloveSmokesTeamA}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label>Clove Smokes Available Team B</label>
+            <Switch
+              checked={cloveSmokesTeamB}
+              onCheckedChange={setCloveSmokesTeamB}
             />
           </div>
 

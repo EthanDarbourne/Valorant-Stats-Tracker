@@ -18,7 +18,7 @@ import {
   import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
   
   // List of available options
-  const options = ["Execute A", "Execute B", "Fight Mid", "First Blood Blue", "First Blood Red", "Denied Exec", "Rotate", "Rehit"];
+  const options = ["Execute A", "Execute B", "Fight Mid", "First Blood Blue", "First Blood Red", "Denied Exec", "Planted", "Retake Failed", "Retake Success", "Save", "Rotate", "Rehit"];
 
   let counter = 0;
 
@@ -26,6 +26,7 @@ import {
   
   type DragAndDropListProps = {
     allowDuplicates: boolean;
+    hasClutchItem: boolean;
   };
 
   type MidRoundItemProps = {
@@ -37,7 +38,7 @@ import {
     return items.find(x => x[1] == key) !== undefined
   }
 
-  export default function DragAndDropList({ allowDuplicates }: DragAndDropListProps) {
+  export default function DragAndDropList({ allowDuplicates, hasClutchItem }: DragAndDropListProps) {
     const [selectedItems, setSelectedItems] = useState<[string,string][]>([]);
     const [hasClutch, setClutch] = useState<boolean>(false);
   
@@ -60,7 +61,6 @@ import {
     };
 
     const removeItem = (item: string) => {
-        console.log("removing " + item);
       setSelectedItems(selectedItems.filter((i) => i[0] !== item));
     };
   
@@ -104,14 +104,14 @@ import {
             </Button>
           ))}
           {/*Can only have one clutch in a round, must be last item */}
-          <Button 
+          { hasClutchItem && <Button 
             key={clutch}
             variant={ContainsKey(clutch, selectedItems) ? "secondary" : "outline"}
               disabled={ContainsKey(clutch, selectedItems)}
               onClick={() => setClutch(true)}
             >
               {clutch}
-            </Button>
+            </Button>}
         </div>
   
         {/* Drag and Drop List */}
