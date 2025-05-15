@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import DragAndDropList from "@/components/ui/DragDropList"
 import { useGameContext } from "@/GameContext";
+import { useMaps, useTeamsByRegion, useTournaments } from "./ApiCallers"
+import { Regions } from "./Constants";
 
 const teams = ["G2", "SEN", "C9", "NRG", "FURIA", "LEV", "MIBR", "2G", "100T", "LOUD", "EG", "KRU"];
 
@@ -18,6 +20,7 @@ const agents = [...duelists, ...initiators, ...controllers, ...sentinels];
 export default function AddGamePage() {
   const [formData, setFormData] = useState({
     title: "",
+    tournament: "",
     mapCount: 3,
     mapNumber: 1,
     teamA: "",
@@ -39,6 +42,10 @@ export default function AddGamePage() {
 
   const [teamAAgents, setTeamAAgents] = useState<string[]>(Array(5).fill(""));
   const [teamBAgents, setTeamBAgents] = useState<string[]>(Array(5).fill(""));
+
+  const maps = useMaps();
+  const tournaments = useTournaments();
+  const teams = useTeamsByRegion(Regions.AMER);
 
   const navigate = useNavigate();
   const { addGame } = useGameContext();
@@ -173,33 +180,6 @@ export default function AddGamePage() {
     return empty + " text-white hover:" + empty; // fallback for no winner
   };
 
-  const options = ["A Site", "B Site", "Mid", "Flank", "Retake"];
-
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-
-  const addItem = (item: string) => {
-    if (!selectedItems.includes(item)) {
-      setSelectedItems([...selectedItems, item]);
-    }
-  };
-
-  const removeItem = (index: number) => {
-    const updated = [...selectedItems];
-    updated.splice(index, 1);
-    setSelectedItems(updated);
-  };
-
-  const moveItem = (index: number, direction: "up" | "down") => {
-    const updated = [...selectedItems];
-    const target = direction === "up" ? index - 1 : index + 1;
-
-    if (target >= 0 && target < updated.length) {
-      [updated[index], updated[target]] = [updated[target], updated[index]];
-      setSelectedItems(updated);
-    }
-  };
-
-
   return (
     <div className="min-h-screen w-screen p-4 space-y-4 text-black bg-white">
 
@@ -208,6 +188,15 @@ export default function AddGamePage() {
         <div className="flex items-center gap-x-4">
 
         {/* Add a list of tournaments that can be selected*/}
+        <select
+        name="tournament"
+        value={formData.tournament}
+        onChange={handleChange}
+        className="w-full border rounded-md p-2 bg-white"
+      >
+        <option key="" value="">Select Tournament</option>
+        {tournaments.map(t => (<option key={t} value={t}>{t}</option>))}
+      </select>
         <Input
           name="title"
           placeholder="Game Title (e.g., Grand Finals)"
@@ -305,14 +294,8 @@ export default function AddGamePage() {
         onChange={handleChange}
         className="w-full border rounded-md p-2 bg-white"
       >
-        <option value="">Select Map</option>
-        <option value="Ascent">Ascent</option>
-        <option value="Fracture">Fracture</option>
-        <option value="Haven">Haven</option>
-        <option value="Icebox">Icebox</option>
-        <option value="Lotus">Lotus</option>
-        <option value="Pearl">Pearl</option>
-        <option value="Split">Split</option>
+        <option key="" value="">Select Map</option>
+        {maps.map(map => (<option key={map} value={map}>{map}</option>))}
       </select>
 
       {errors.selectMap && <div className="text-red-600 text-sm">{errors.selectMap}</div>}

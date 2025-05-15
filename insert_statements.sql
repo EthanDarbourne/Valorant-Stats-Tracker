@@ -1,0 +1,11 @@
+INSERT INTO "Teams" ("Name", "Region") VALUES ('DetonatioN FocusMe', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('DRX', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('Gen.G Esports', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('Global Esports', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('Paper Rex', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('Rex Regum Qeon', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('T1', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('TALON', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('Team Secret', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('ZETA DIVISION', 'APAC');
+INSERT INTO "Teams" ("Name", "Region") VALUES ('Bleed Esports', 'APAC');

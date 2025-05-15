@@ -1,7 +1,7 @@
 Pass two teams to round and clutch dialogs
 
 
-
+Use * in import
 
 
 Collect all data when saving map
