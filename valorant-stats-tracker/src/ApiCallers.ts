@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MAPSROUTE, PORT, Regions, TEAMSBYREGIONROUTE, TEAMSBYTOURNAMENTROUTE, TOURNAMENTSROUTE, TOURNAMENTSBYIDROUTE } from './Constants';
+import { Tournament, TournamentSchema } from "./types/TournamentSchema";
 
 export function useMaps() {
     const [maps, setMaps] = useState<string[]>([]);
@@ -77,8 +78,8 @@ export function useTournaments() {
     return maps;
 }
 
-export function useTournamentById(id: number) {
-    const [maps, setMaps] = useState<string[]>([]);
+export function useTournamentById(id: number, setTournament: React.Dispatch<React.SetStateAction<any>>) {
+    // const [tournament, setTournament] = useState<Tournament | null>(null);
 
     useEffect(() => {
         fetch(`http://localhost:${PORT}/${TOURNAMENTSBYIDROUTE}?id=${encodeURIComponent(id.toString())}`)
@@ -87,11 +88,15 @@ export function useTournamentById(id: number) {
             return res.json();
         })
         .then((data) => {
-            const names = data.map((item: { Name: string }) => item.Name);
-            setMaps(names);
+            const result = TournamentSchema.safeParse(data);
+            if (result.success) {
+                setTournament(result.data); // ✅ Only set if valid
+            } else {
+                console.error("Validation failed:", result.error);
+            }
         })
         .catch((err) => console.error(err))
     }, []);
 
-    return maps;
+    // return tournament;
 }

@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-
-type Tournament = {
-  id: string;
-  name: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  completed: boolean;
-  winner: string;
-};
+import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useTournamentById } from './ApiCallers';
+import { Tournament } from './types/TournamentSchema';
+import { updateTournament } from './ApiPosters';
 
 const dummyTeams = [
   "Team Alpha", "Team Bravo", "Team Charlie", "Team Delta",
@@ -19,33 +12,19 @@ const dummyTeams = [
 const EditTournamentPage = () => {
   const { id } = useParams<{ id: string }>();
 
-  const [tournament, setTournament] = useState<Tournament>({
-    id: id || "",
-    name: "",
-    location: "",
-    startDate: "",
-    endDate: "",
-    completed: false,
-    winner: ""
-  });
-
   const [teamSelections, setTeamSelections] = useState<string[][]>([[], [], [], []]);
 
   // Simulate fetching the tournament
-  useEffect(() => {
-    if (id) {
-      // Replace with actual API call to load tournament info
-      setTournament({
-        id,
-        name: "Sample Tournament",
-        location: "New York",
-        startDate: "2024-07-01",
-        endDate: "2024-07-10",
-        completed: false,
-        winner: ""
-      });
-    }
-  }, [id]);
+  const [tournament, setTournament] = useState<Tournament>({
+    id: '',
+    name: '',
+    location: '',
+    startDate: '',
+    endDate: '',
+    completed: false,
+    winner: '',
+    });
+  useTournamentById(Number(id), setTournament);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -68,6 +47,13 @@ const EditTournamentPage = () => {
       return current;
     });
   };
+
+    const navigate = useNavigate();
+
+  const save = async () => {
+    await updateTournament(tournament);
+    navigate("/add-tournaments")
+  }
 
   const allSelectedTeams = Array.from(new Set(teamSelections.flat()));
 
@@ -158,7 +144,7 @@ const EditTournamentPage = () => {
         ))}
       </div>
 
-      <button className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+      <button onClick={_ => save()} className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
         Save Changes
       </button>
     </div>

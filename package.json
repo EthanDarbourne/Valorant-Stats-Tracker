@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "react-router-dom": "^7.5.3"
+    "react-router-dom": "^7.5.3",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/react-router-dom": "^5.3.3"
