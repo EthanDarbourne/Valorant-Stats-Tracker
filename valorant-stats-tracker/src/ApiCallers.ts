@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MAPSROUTE, PORT, Regions, TEAMSBYREGIONROUTE, TEAMSBYTOURNAMENTROUTE, TOURNAMENTSROUTE, TOURNAMENTSBYIDROUTE } from './Constants';
-import { Tournament, TournamentSchema } from "./types/TournamentSchema";
+import { FixDates, FixDatesInArray, TournamentArraySchema, TournamentSchema } from "./types/TournamentSchema";
 
 export function useMaps() {
     const [maps, setMaps] = useState<string[]>([]);
@@ -23,14 +23,15 @@ export function useMaps() {
 
 export function useTeamsByRegion(region: Regions) {
     const [teams, setTeams] = useState<string[]>([]);
-
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${TEAMSBYREGIONROUTE}?region=${encodeURIComponent(region.toString())}`)
+        fetch(`http://localhost:${PORT}/${TEAMSBYREGIONROUTE}?region=${encodeURIComponent(Regions[region].toString())}`)
         .then((res) => {
+            
             if (!res.ok) throw new Error("Failed to fetch teams by region");
             return res.json();
         })
         .then((data) => {
+            console.log("Fetched", data);
             const teamNames = data.map((item: { Name: string }) => item.Name);
             setTeams(teamNames);
         })
@@ -38,6 +39,23 @@ export function useTeamsByRegion(region: Regions) {
     }, []);
 
     return teams;
+}
+
+export function useAllTeamsByRegions(regions: Regions[]) {
+  const [teamsByRegion, setTeamsByRegion] = useState<Record<string, string[]>>({});
+
+  // Populate each region’s teams using the useTeamsByRegion hook
+  const allTeams = regions.reduce((acc, region) => {
+    const teams = useTeamsByRegion(region); // returns a list of strings (React state)
+    acc[region] = teams;
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  useEffect(() => {
+    setTeamsByRegion(allTeams);
+  }, [JSON.stringify(allTeams)]); // triggers on any change in teams
+
+  return teamsByRegion;
 }
 
 export function useTeamsByTournament(tournament: string) {
@@ -59,9 +77,7 @@ export function useTeamsByTournament(tournament: string) {
     return teams;
 }
 
-export function useTournaments() {
-    const [maps, setMaps] = useState<string[]>([]);
-
+export function useTournaments(setTournaments: React.Dispatch<React.SetStateAction<any>>) {
     useEffect(() => {
         fetch(`http://localhost:${PORT}/${TOURNAMENTSROUTE}`)
         .then((res) => {
@@ -69,13 +85,16 @@ export function useTournaments() {
             return res.json();
         })
         .then((data) => {
-            const names = data.map((item: { Name: string }) => item.Name);
-            setMaps(names);
+            const result = TournamentArraySchema.safeParse(data);
+            if (result.success) {
+                data = FixDatesInArray(result.data);
+                setTournaments(data);
+            } else {
+                console.error("Validation failed:", result.error);
+            }
         })
         .catch((err) => console.error(err))
     }, []);
-
-    return maps;
 }
 
 export function useTournamentById(id: number, setTournament: React.Dispatch<React.SetStateAction<any>>) {
@@ -90,7 +109,8 @@ export function useTournamentById(id: number, setTournament: React.Dispatch<Reac
         .then((data) => {
             const result = TournamentSchema.safeParse(data);
             if (result.success) {
-                setTournament(result.data); // ✅ Only set if valid
+                data = FixDates(result.data);
+                setTournament(data);
             } else {
                 console.error("Validation failed:", result.error);
             }

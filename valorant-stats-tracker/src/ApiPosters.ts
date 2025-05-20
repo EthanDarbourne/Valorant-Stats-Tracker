@@ -1,3 +1,4 @@
+import { PORT, SAVETOURNAMENTROUTE } from "./Constants";
 import { Tournament, TournamentSchema } from "./types/TournamentSchema";
 
 
@@ -11,7 +12,7 @@ export async function updateTournament(tournament: Tournament) {
     throw new Error("Invalid tournament data");
   }
   console.log("Sending ", parsed.data)
-  const response = await fetch("/api/saveTournament", {
+  const response = await fetch(`http://localhost:${PORT}/${SAVETOURNAMENTROUTE}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

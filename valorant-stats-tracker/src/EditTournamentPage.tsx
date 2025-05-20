@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useTournamentById } from './ApiCallers';
+import { useAllTeamsByRegions, useTournamentById } from './ApiCallers';
 import { Tournament } from './types/TournamentSchema';
 import { updateTournament } from './ApiPosters';
+import { RegionList } from './Constants';
 
 const dummyTeams = [
   "Team Alpha", "Team Bravo", "Team Charlie", "Team Delta",
@@ -13,17 +14,19 @@ const EditTournamentPage = () => {
   const { id } = useParams<{ id: string }>();
 
   const [teamSelections, setTeamSelections] = useState<string[][]>([[], [], [], []]);
+  
+  const teamsByRegion = useAllTeamsByRegions(RegionList);
 
-  // Simulate fetching the tournament
   const [tournament, setTournament] = useState<Tournament>({
-    id: '',
-    name: '',
-    location: '',
-    startDate: '',
-    endDate: '',
-    completed: false,
-    winner: '',
-    });
+      Id: -1,
+      Name: "",
+      Location: "",
+      StartDate: "",
+      EndDate: "",
+      Completed: false,
+      Winner: "",
+      Teams: []
+    },);
   useTournamentById(Number(id), setTournament);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -51,6 +54,7 @@ const EditTournamentPage = () => {
     const navigate = useNavigate();
 
   const save = async () => {
+    tournament.Teams = teamSelections.flat();
     await updateTournament(tournament);
     navigate("/add-tournaments")
   }
@@ -59,49 +63,49 @@ const EditTournamentPage = () => {
 
   return (
     <div className="p-6 w-full">
-      <h2 className="text-2xl font-bold mb-4">Edit Tournament: {tournament.name}</h2>
+      <h2 className="text-2xl font-bold mb-4">Edit Tournament: {tournament.Name}</h2>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <input
-          name="name"
-          value={tournament.name}
+          name="Name"
+          value={tournament.Name}
           onChange={handleInputChange}
           placeholder="Tournament Name"
           className="border rounded p-2 text-black"
         />
         <input
-          name="location"
-          value={tournament.location}
+          name="Location"
+          value={tournament.Location}
           onChange={handleInputChange}
           placeholder="Location"
           className="border rounded p-2 text-black"
         />
         <input
           type="date"
-          name="startDate"
-          value={tournament.startDate}
+          name="StartDate"
+          value={tournament.StartDate}
           onChange={handleInputChange}
           className="border rounded p-2 text-black"
         />
         <input
           type="date"
-          name="endDate"
-          value={tournament.endDate}
+          name="EndDate"
+          value={tournament.EndDate}
           onChange={handleInputChange}
           className="border rounded p-2 text-black"
         />
         <label className="flex items-center gap-2 col-span-2">
           <input
             type="checkbox"
-            name="completed"
-            checked={tournament.completed}
+            name="Completed"
+            checked={tournament.Completed}
             onChange={handleInputChange}
           />
           Completed
         </label>
         <select
-          name="winner"
-          value={tournament.winner}
+          name="Winner"
+          value={tournament.Winner}
           onChange={handleInputChange}
           className="border rounded p-2 text-black col-span-2"
         >
@@ -114,15 +118,15 @@ const EditTournamentPage = () => {
 
       <h3 className="text-xl font-semibold mb-2">Team Selection</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        {teamSelections.map((selected, index) => (
+        {RegionList.map((region, index) => (
           <div key={index} className="border p-2 rounded">
             <h4 className="font-semibold mb-2">Dropdown {index + 1}</h4>
-            {dummyTeams.map((team) => (
+            {teamsByRegion[region]?.map((team) => (
               <div
                 key={team}
                 onClick={() => handleTeamSelect(index, team)}
                 className={`cursor-pointer p-1 rounded ${
-                  selected.includes(team) ? "bg-blue-300" : "hover:bg-gray-100"
+                  teamSelections[index].includes(team) ? "bg-blue-300" : "hover:bg-gray-100"
                 }`}
               >
                 {team}

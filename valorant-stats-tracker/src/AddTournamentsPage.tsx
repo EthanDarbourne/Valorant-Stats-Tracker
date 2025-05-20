@@ -1,15 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
-
-type Tournament = {
-  id: number;
-  name: string;
-  startDate: string;
-  endDate: string;
-  location: string;
-  completed: boolean;
-  winner: string;
-};
+import { updateTournament } from "./ApiPosters";
+import { Tournament } from "./types/TournamentSchema";
+import { useTournaments } from "./ApiCallers";
 
 export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -21,20 +14,23 @@ export default function TournamentsPage() {
     setTournaments([
       ...tournaments,
       {
-        id: -1,
-        name: "",
-        location: "",
-        startDate: "",
-        endDate: "",
-        completed: false,
-        winner: "",
+        Id: -1,
+        Name: "",
+        Location: "",
+        StartDate: Date(),
+        EndDate: Date(),
+        Completed: false,
+        Winner: "",
+        Teams: []
       },
     ]);
   };
 
+  useTournaments(setTournaments);
+
   const handleRemoveTournament = (id: number) => {
     console.log("Delete tournament:", id);
-    setTournaments(tournaments.filter((t) => t.id !== id));
+    setTournaments(tournaments.filter((t) => t.Id !== id));
   };
 
   const handleChange = (
@@ -44,17 +40,14 @@ export default function TournamentsPage() {
   ) => {
     setTournaments(
       tournaments.map((t) =>
-        t.id === id ? { ...t, [field]: value } : t
+        t.Id === id ? { ...t, [field]: value } : t
       )
     );
   };
 
-  const handleSaveTournament = (id: number) => {
-    const tournament = tournaments.find((t) => t.id === id);
-    if (tournament) {
-      console.log("Save tournament:", tournament);
-      // TODO: Save to backend
-    }
+  const handleSaveTournament = async (t: Tournament) => {
+    console.log("Save tournament:", t);
+    t.Id = await updateTournament(t);
   };
 
   const handleSaveAll = () => {
@@ -97,50 +90,50 @@ export default function TournamentsPage() {
           </thead>
           <tbody>
             {tournaments.map((t) => (
-              <tr key={t.id} className="border">
+              <tr key={t.Id} className="border">
                 <td className="border px-2 py-1">
                   <input
                     type="text"
-                    value={t.name}
-                    onChange={(e) => handleChange(t.id, "name", e.target.value)}
+                    value={t.Name}
+                    onChange={(e) => handleChange(t.Id, "Name", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
                 </td>
                 <td className="border px-2 py-1">
                   <input
                     type="text"
-                    value={t.location}
-                    onChange={(e) => handleChange(t.id, "location", e.target.value)}
+                    value={t.Location}
+                    onChange={(e) => handleChange(t.Id, "Location", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
                 </td>
                 <td className="border px-2 py-1">
                   <input
                     type="date"
-                    value={t.startDate}
-                    onChange={(e) => handleChange(t.id, "startDate", e.target.value)}
+                    value={t.StartDate}
+                    onChange={(e) => handleChange(t.Id, "StartDate", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
                 </td>
                 <td className="border px-2 py-1">
                   <input
                     type="date"
-                    value={t.endDate}
-                    onChange={(e) => handleChange(t.id, "endDate", e.target.value)}
+                    value={t.EndDate}
+                    onChange={(e) => handleChange(t.Id, "EndDate", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
                 </td>
                 <td className="border px-2 py-1 text-center">
                   <input
                     type="checkbox"
-                    checked={t.completed}
-                    onChange={(e) => handleChange(t.id, "completed", e.target.checked)}
+                    checked={t.Completed}
+                    onChange={(e) => handleChange(t.Id, "Completed", e.target.checked)}
                   />
                 </td>
                 <td className="border px-2 py-1">
                   <select
-                    value={t.winner}
-                    onChange={(e) => handleChange(t.id, "winner", e.target.value)}
+                    value={t.Winner}
+                    onChange={(e) => handleChange(t.Id, "Winner", e.target.value)}
                     className="border rounded p-1 w-full"
                   >
                     <option value="">-- Select Winner --</option>
@@ -150,19 +143,19 @@ export default function TournamentsPage() {
                   </select>
                 </td>
                 <td>
-                    <button onClick={() => navigate(`/edit-tournament/${t.id}`)}> {/*disabled={t.id == -1} */}
+                    <button disabled={t.Id == -1} onClick={() => navigate(`/edit-tournament/${t.Id}`)}> {/* */}
                     Edit Teams
                     </button>
                 </td>
                 <td className="border px-2 py-1 text-center space-x-2">
                   <button
-                    onClick={() => handleSaveTournament(t.id)}
+                    onClick={() => handleSaveTournament(t)}
                     className="text-green-600 hover:underline"
                   >
                     Save
                   </button>
                   <button
-                    onClick={() => handleRemoveTournament(t.id)}
+                    onClick={() => handleRemoveTournament(t.Id)}
                     className="text-red-600 hover:underline"
                   >
                     Delete
