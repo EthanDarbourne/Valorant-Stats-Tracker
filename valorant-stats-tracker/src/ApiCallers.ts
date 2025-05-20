@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MAPSROUTE, PORT, Regions, TEAMSBYREGIONROUTE, TEAMSBYTOURNAMENTROUTE, TOURNAMENTSROUTE, TOURNAMENTSBYIDROUTE } from './Constants';
-import { FixDates, FixDatesInArray, TournamentArraySchema, TournamentSchema } from "./types/TournamentSchema";
+import { FixDates, FixDatesInArray, TournamentArraySchema, TournamentSchema } from "../../shared/TournamentSchema";
 
 export function useMaps() {
     const [maps, setMaps] = useState<string[]>([]);

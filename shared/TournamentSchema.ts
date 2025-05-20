@@ -1,5 +1,10 @@
-import { toInputDateString } from "@/Helpers";
+import { toInputDateString } from "./Helpers";
 import { z } from "zod";
+
+export const TeamInfo = z.object({
+  Name: z.string(),
+  Placement: z.number().optional()
+})
 
 export const TournamentSchema = z.object({
   Id: z.number(),
@@ -11,6 +16,8 @@ export const TournamentSchema = z.object({
   Winner: z.string(),
   Teams: z.array(z.string()).optional().default([]),
 });
+
+
 
 // If you're fetching an array of tournaments
 export const TournamentArraySchema = z.array(TournamentSchema);

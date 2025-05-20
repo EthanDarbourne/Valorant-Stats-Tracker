@@ -7,6 +7,7 @@ import DragAndDropList from "@/components/ui/DragDropList"
 import { useGameContext } from "@/GameContext";
 import { useMaps, useTeamsByRegion, useTournaments } from "./ApiCallers"
 import { Regions } from "./Constants";
+import { Tournament } from "../../shared/TournamentSchema";
 
 const teams = ["G2", "SEN", "C9", "NRG", "FURIA", "LEV", "MIBR", "2G", "100T", "LOUD", "EG", "KRU"];
 
@@ -44,7 +45,9 @@ export default function AddGamePage() {
   const [teamBAgents, setTeamBAgents] = useState<string[]>(Array(5).fill(""));
 
   const maps = useMaps();
-  const tournaments = useTournaments();
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  
+  useTournaments(setTournaments);
   const teams = useTeamsByRegion(Regions.AMER);
 
   const navigate = useNavigate();
@@ -195,7 +198,7 @@ export default function AddGamePage() {
         className="w-full border rounded-md p-2 bg-white"
       >
         <option key="" value="">Select Tournament</option>
-        {tournaments.map(t => (<option key={t} value={t}>{t}</option>))}
+        {tournaments.map(t => t.Name).map(t => (<option key={t} value={t}>{t}</option>))}
       </select>
         <Input
           name="title"

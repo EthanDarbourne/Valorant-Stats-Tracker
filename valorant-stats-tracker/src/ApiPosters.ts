@@ -1,5 +1,5 @@
 import { PORT, SAVETOURNAMENTROUTE } from "./Constants";
-import { Tournament, TournamentSchema } from "./types/TournamentSchema";
+import { Tournament, TournamentSchema } from "../../shared/TournamentSchema";
 
 
 

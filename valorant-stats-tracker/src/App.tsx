@@ -3,6 +3,7 @@ import HomePage from "./HomePage";
 import AddGamePage from "./AddGamePage";
 import AddTournaments from "./AddTournamentsPage";
 import EditTournament from './EditTournamentPage';
+import EditTournamentResults from './EditTournamentResultsPage';
 
 // Inside Routes
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
       <Route path="/add-tournaments" element={<AddTournaments />} />
       
       <Route path="/edit-tournament/:id" element={<EditTournament />} />
+      <Route path="/edit-tournament-results/:id" element={<EditTournamentResults />} />
     </Routes>
   );
 }

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { updateTournament } from "./ApiPosters";
-import { Tournament } from "./types/TournamentSchema";
+import { Tournament } from "../../shared/TournamentSchema";
 import { useTournaments } from "./ApiCallers";
+import { toInputDateString } from "../../shared/Helpers";
 
 export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -10,15 +11,16 @@ export default function TournamentsPage() {
     // inside your component
     const navigate = useNavigate();
 
+  const nextId = useRef(-1);
   const handleAddTournament = () => {
     setTournaments([
       ...tournaments,
       {
-        Id: -1,
+        Id: nextId.current--,
         Name: "",
         Location: "",
-        StartDate: Date(),
-        EndDate: Date(),
+        StartDate: toInputDateString(Date()),
+        EndDate: toInputDateString(Date()),
         Completed: false,
         Winner: "",
         Teams: []
@@ -145,6 +147,11 @@ export default function TournamentsPage() {
                 <td>
                     <button disabled={t.Id == -1} onClick={() => navigate(`/edit-tournament/${t.Id}`)}> {/* */}
                     Edit Teams
+                    </button>
+                </td>
+                <td>
+                    <button disabled={t.Id == -1} onClick={() => navigate(`/edit-tournament-placements/${t.Id}`)}> {/* */}
+                    Edit Placements
                     </button>
                 </td>
                 <td className="border px-2 py-1 text-center space-x-2">
