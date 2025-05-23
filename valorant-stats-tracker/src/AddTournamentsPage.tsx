@@ -22,7 +22,6 @@ export default function TournamentsPage() {
         StartDate: toInputDateString(Date()),
         EndDate: toInputDateString(Date()),
         Completed: false,
-        Winner: "",
         Teams: []
       },
     ]);
@@ -85,8 +84,8 @@ export default function TournamentsPage() {
               <th className="border px-4 py-2">Start Date</th>
               <th className="border px-4 py-2">End Date</th>
               <th className="border px-4 py-2">Completed</th>
-              <th className="border px-4 py-2">Winner</th>
-              <th className="border px-4 py-2">Edit</th>
+              <th className="border px-4 py-2">Edit Teams</th>
+              <th className="border px-4 py-2">Edit Placements</th>
               <th className="border px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -132,25 +131,13 @@ export default function TournamentsPage() {
                     onChange={(e) => handleChange(t.Id, "Completed", e.target.checked)}
                   />
                 </td>
-                <td className="border px-2 py-1">
-                  <select
-                    value={t.Winner}
-                    onChange={(e) => handleChange(t.Id, "Winner", e.target.value)}
-                    className="border rounded p-1 w-full"
-                  >
-                    <option value="">-- Select Winner --</option>
-                    {/* Replace with actual teams */}
-                    <option value="Team A">Team A</option>
-                    <option value="Team B">Team B</option>
-                  </select>
-                </td>
-                <td>
-                    <button disabled={t.Id == -1} onClick={() => navigate(`/edit-tournament/${t.Id}`)}> {/* */}
+                <td className="border px-2 py-1 text-center">
+                    <button disabled={t.Id < 0} onClick={() => navigate(`/edit-tournament/${t.Id}`)}> {/* */}
                     Edit Teams
                     </button>
                 </td>
-                <td>
-                    <button disabled={t.Id == -1} onClick={() => navigate(`/edit-tournament-placements/${t.Id}`)}> {/* */}
+                <td className="border px-2 py-1 text-center">
+                    <button disabled={t.Id < 0} onClick={() => navigate(`/edit-tournament-results/${t.Id}`)}> {/* */}
                     Edit Placements
                     </button>
                 </td>

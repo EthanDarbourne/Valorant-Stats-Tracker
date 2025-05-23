@@ -1,14 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAllTeamsByRegions, useTournamentById } from './ApiCallers';
-import { Tournament } from './types/TournamentSchema';
+import { Tournament } from '../../shared/TournamentSchema';
 import { updateTournament } from './ApiPosters';
 import { RegionList } from './Constants';
-
-const dummyTeams = [
-  "Team Alpha", "Team Bravo", "Team Charlie", "Team Delta",
-  "Team Echo", "Team Foxtrot", "Team Gamma", "Team Omega"
-];
 
 const EditTournamentPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,9 +19,28 @@ const EditTournamentPage = () => {
       StartDate: "",
       EndDate: "",
       Completed: false,
-      Winner: "",
       Teams: []
     },);
+
+    useEffect(() => {
+      if (!tournament?.Teams) return;
+
+      const selectedTeams = tournament.Teams;
+
+      const allRegionsLoaded = RegionList.every(region =>
+        Array.isArray(teamsByRegion[region])
+      );
+
+      if (!allRegionsLoaded) return;
+
+      const newSelections = RegionList.map(region => {
+        const regionTeams = teamsByRegion[region] || [];
+        return regionTeams.filter(team => selectedTeams.map(x => x.Name).includes(team));
+      });
+
+      setTeamSelections(newSelections);
+    }, [teamsByRegion, tournament]);
+
   useTournamentById(Number(id), setTournament);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -54,10 +68,15 @@ const EditTournamentPage = () => {
     const navigate = useNavigate();
 
   const save = async () => {
-    tournament.Teams = teamSelections.flat();
+    tournament.Teams = teamSelections.flat().map(name => ({
+      Name: name,
+      Placement: null,
+    }));
     await updateTournament(tournament);
-    navigate("/add-tournaments")
+    goBack()
   }
+
+  const goBack = () => navigate("/add-tournaments");
 
   const allSelectedTeams = Array.from(new Set(teamSelections.flat()));
 
@@ -103,17 +122,6 @@ const EditTournamentPage = () => {
           />
           Completed
         </label>
-        <select
-          name="Winner"
-          value={tournament.Winner}
-          onChange={handleInputChange}
-          className="border rounded p-2 text-black col-span-2"
-        >
-          <option value="">Select Winner</option>
-          {dummyTeams.map((team) => (
-            <option key={team} value={team}>{team}</option>
-          ))}
-        </select>
       </div>
 
       <h3 className="text-xl font-semibold mb-2">Team Selection</h3>
@@ -150,6 +158,9 @@ const EditTournamentPage = () => {
 
       <button onClick={_ => save()} className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
         Save Changes
+      </button>
+      <button onClick={_ => goBack()} className="mt-6 px-4 py-2 rounded">
+        Go Back
       </button>
     </div>
   );

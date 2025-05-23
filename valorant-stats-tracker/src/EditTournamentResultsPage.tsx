@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   useDraggable,
@@ -7,18 +7,14 @@ import {
   closestCenter,
 } from "@dnd-kit/core";
 import { useParams } from "react-router-dom";
-import { useTeamsByTournament, useTournamentById } from "./ApiCallers";
+import { useTournamentById } from "./ApiCallers";
+import { Tournament } from "../../shared/TournamentSchema";
 
 interface TeamEntry {
+  index: number;
   name: string;
   placement: number;
   games: (string | null)[];
-}
-
-interface Props {
-  initialTeams: string[];
-  initialPlacements?: Record<string, number>;
-  initialGamesCount?: number;
 }
 
 const DraggableOpponent = ({ id, children }: { id: string; children: React.ReactNode }) => {
@@ -54,39 +50,47 @@ const DroppableCell = ({ id, onDrop, children }: { id: string; onDrop: (id: stri
 
 const EditTournamentPlacements = () => {
 
-    const { id } = useParams<{ id: string }>();
-
-  const initialGamesCount = useState<number>(3);
-
-  const initialTeams = useState<string[]>([]);
-
+  const { id } = useParams<{ id: string }>();
+  
   const [tournament, setTournament] = useState<Tournament>({
-        Id: -1,
-        Name: "",
-        Location: "",
-        StartDate: "",
-        EndDate: "",
-        Completed: false,
-        Winner: "",
-        Teams: []
-      },);
-
+    Id: -1,
+    Name: "",
+    Location: "",
+    StartDate: "",
+    EndDate: "",
+    Completed: false,
+    Teams: []
+  },);
+      
   useTournamentById(Number(id), setTournament);
-
-  initialTeams = useTeamsByTournament(tournament.Id)
-
-  const [gameCount, setGameCount] = useState(initialGamesCount);
+  
+  const maxGameCount = 10;
+  const [gameCount, setGameCount] = useState(3);
   const [teams, setTeams] = useState<TeamEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  
+  const oppositeGamesRef = useRef<[number, number][][]>([]);
+  useEffect(() => {
+    oppositeGamesRef.current = create2DArray(teams.length, maxGameCount, defaultValue);
+  }, [teams.length, maxGameCount]);
 
   useEffect(() => {
-    const teamData = initialTeams.map((team) => ({
-      name: team,
-      placement: initialPlacements[team] ?? 0,
+    const teamData = tournament.Teams.map((team, index) => ({
+      index: index,
+      name: team.Name,
+      placement: team.Placement ?? 0,
       games: Array(gameCount).fill(null),
     }));
     setTeams(teamData);
-  }, [initialTeams]);
+  }, [tournament.Teams]);
+
+  const getTeamIdx = (name: string) => {
+    return teams.findIndex(team => team.name === name);
+  }
+
+  const getNextFreeGameIdx = (index: number) => {
+    return teams[index].games.findIndex(team => team == null);
+  }
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -101,20 +105,17 @@ const EditTournamentPlacements = () => {
     const [_, fromTeam, fromIndex] = active.id.split("__");
     const [__, toTeam, toIndex] = over.id.split("__");
 
+    // can only rearrange game order in team
+    if(fromTeam !== toTeam) return;
+
     const opponentName = teams.find((t) => t.name === fromTeam)?.games[parseInt(fromIndex)];
     if (!opponentName) return;
 
     setTeams((prev) => {
-      const updated = [...prev];
-
-      // Remove opponent from old slot
-      const fromIdx = updated.findIndex((t) => t.name === fromTeam);
-      updated[fromIdx].games[parseInt(fromIndex)] = null;
-
-      // Add opponent to new slot
-      const toIdx = updated.findIndex((t) => t.name === toTeam);
-      updated[toIdx].games[parseInt(toIndex)] = opponentName;
-
+      let updated = [...prev];
+      const idx = getTeamIdx(fromTeam);
+      const [item] = updated[idx].games.splice(parseInt(fromIndex), 1); // remove the item
+      updated[idx].games.splice(parseInt(toIndex), 0, item); // insert at new index
       return updated;
     });
   };
@@ -122,6 +123,7 @@ const EditTournamentPlacements = () => {
   const sortedTeams = [...teams].sort((a, b) => a.placement - b.placement);
 
   const addGameSlot = () => {
+    if(gameCount === maxGameCount) return;
     setTeams((prev) => prev.map((team) => ({ ...team, games: [...team.games, null] })));
     setGameCount((prev) => prev + 1);
   };
@@ -133,12 +135,83 @@ const EditTournamentPlacements = () => {
   };
 
   const handlePlacementChange = (index: number, value: number) => {
+    if(value < 1 || value > teams.length) return;
     setTeams((prev) => {
       const updated = [...prev];
       updated[index].placement = value;
       return updated;
     });
   };
+
+  function create2DArray<T>(rows: number, cols: number, defaultValue: T): T[][] {
+    return Array(rows).fill(null).map(() => Array(cols).fill(defaultValue));
+  }
+  const defaultValue: [number, number] = [-1,-1]
+
+  
+
+  
+
+  function updateGamePair(
+    pair1: [number, number],
+    pair2: [number, number],
+    value1: string | null,
+    value2: string | null
+  ) {
+    setTeams(prevTeams => {
+      const [teamIdx1, gameIdx1] = pair1;
+      const [teamIdx2, gameIdx2] = pair2;
+
+      // Defensive: return original if indices are invalid
+      if (
+        teamIdx1 < 0 || teamIdx1 >= prevTeams.length ||
+        gameIdx1 < 0 || gameIdx1 >= prevTeams[teamIdx1].games.length || 
+        teamIdx2 < 0 || teamIdx2 >= prevTeams.length ||
+        gameIdx2 < 0 || gameIdx2 >= prevTeams[teamIdx2].games.length
+      ) {
+        return prevTeams;
+      }
+      oppositeGamesRef.current[teamIdx1][gameIdx1] = pair2;
+      oppositeGamesRef.current[teamIdx2][gameIdx2] = pair1;
+
+      // Deep copy of teams array
+      const updatedTeams = [...prevTeams];
+
+      // Copy and update team 1
+      const updatedTeam1 = {
+        ...updatedTeams[teamIdx1],
+        games: [...updatedTeams[teamIdx1].games],
+      };
+      updatedTeam1.games[gameIdx1] = value1;
+
+      // Copy and update team 2
+      const updatedTeam2 = {
+        ...updatedTeams[teamIdx2],
+        games: [...updatedTeams[teamIdx2].games],
+      };
+      updatedTeam2.games[gameIdx2] = value2;
+
+      // Replace updated teams
+      updatedTeams[teamIdx1] = updatedTeam1;
+      updatedTeams[teamIdx2] = updatedTeam2;
+
+      return updatedTeams;
+    });
+  }
+
+  const handleOpponentChange = (teamIdx: number, gameIdx: number, value: string) => {
+    if(value === "") {
+      // clearing an opponent (clear from both teams)
+      const oppositeTeam = oppositeGamesRef.current[teamIdx][gameIdx]
+      updateGamePair([teamIdx, gameIdx], oppositeTeam, null, null);
+    }
+    else {
+      // adding an opponent 
+      const oppoTeamIdx = getTeamIdx(value);
+      const nextIdx = getNextFreeGameIdx(oppoTeamIdx);
+      updateGamePair([teamIdx, gameIdx], [oppoTeamIdx, nextIdx], value, teams[teamIdx].name);
+    }
+  }
 
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
@@ -164,29 +237,48 @@ const EditTournamentPlacements = () => {
             </tr>
           </thead>
           <tbody>
-            {sortedTeams.map((team, teamIndex) => (
+            {sortedTeams.map((team) => (
               <tr key={team.name}>
                 <td className="border px-2 py-1 font-medium">{team.name}</td>
                 <td className="border px-2 py-1">
                   <input
                     type="number"
                     value={team.placement}
-                    onChange={(e) => handlePlacementChange(teamIndex, parseInt(e.target.value))}
+                    onChange={(e) => handlePlacementChange(team.index, parseInt(e.target.value))}
                     className="w-16 border rounded px-1"
+                    min="1"
+                    max={`${sortedTeams.length}`}
                   />
                 </td>
                 {team.games.map((opponent, gameIndex) => (
                   <DroppableCell
                     key={gameIndex}
                     id={`cell__${team.name}__${gameIndex}`}
-                    onDrop={() => {}}
+                    onDrop={(e) => {}}
                   >
                     {opponent ? (
-                      <DraggableOpponent id={`cell__${team.name}__${gameIndex}`}>
-                        {opponent}
-                      </DraggableOpponent>
+                      <div className="flex items-center justify-between w-full">
+                        <DraggableOpponent id={`cell__${team.name}__${gameIndex}`}>
+                          <span>{opponent}</span>
+                        </DraggableOpponent>
+                        <button
+                          type="button"
+                          onClick={() => handleOpponentChange(team.index, gameIndex, "")}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          D
+                        </button>
+                      </div>
                     ) : (
-                      <span className="text-gray-400">Empty</span>
+                      <select
+                        name="tournament"
+                        onChange={e => {e.preventDefault();handleOpponentChange(team.index, gameIndex, e.target.value)}}
+                        className="w-full border rounded-md p-2 bg-white"
+                        value="" 
+                    >
+                        <option key="" value="">Select Opponent</option>
+                        {teams.map(t => t.name).filter(t => t !== team.name).map(t => (<option key={t} value={t}>{t}</option>))}
+                    </select>
                     )}
                   </DroppableCell>
                 ))}

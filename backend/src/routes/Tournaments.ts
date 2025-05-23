@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { GenerateSelectStatement, GetFromDatabase, SelectFromTableWhere } from '../Select';
 import { InsertToDatabase, UpdateInDatabase } from "../Insert";
 import { TournamentsTableSchema } from '../TableSchemas/TournamentsTable';
-import { FixDates, TournamentSchema } from "../../../shared/TournamentSchema"
+import { FixDates, TeamInfo, TournamentSchema } from "../../../shared/TournamentSchema"
 import { DeleteFromTable } from '../Delete';
 
 const router = Router();
@@ -26,12 +26,11 @@ router.get('/api/tournamentById', async (req: Request, res: Response) => {
 
   const rows = await SelectFromTableWhere("TournamentResults", { TournamentId: id });
 
-  const teamNames = rows.map(r => r.Team);
-  const placements = rows.map(r => r.Placement);
+  const teams = rows.map(r => ({ Name: r.Team, Placement: r.Placement }));
 
   const fullTournament = {
     ...tournament,
-    Teams: teamNames,
+    Teams: teams,
   };
 
   const parsed = TournamentSchema.safeParse(fullTournament);
@@ -43,7 +42,7 @@ router.get('/api/tournamentById', async (req: Request, res: Response) => {
 });
 
 
-async function UpdateTournamentResults(tournamentId: number, teamNames: string[]): Promise<void> {
+async function UpdateTournamentResults(tournamentId: number, teamNames: TeamInfo[]): Promise<void> {
   if (!Number.isInteger(tournamentId)) {
     throw new Error("Invalid TournamentId");
   }
@@ -56,7 +55,8 @@ async function UpdateTournamentResults(tournamentId: number, teamNames: string[]
     for (const team of teamNames) {
       await InsertToDatabase("TournamentResults", {
         TournamentId: tournamentId,
-        Team: team,
+        Team: team.Name,
+        Placement: team.Placement
       });
     }
 

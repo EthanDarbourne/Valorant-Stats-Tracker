@@ -9,9 +9,6 @@ import { useMaps, useTeamsByRegion, useTournaments } from "./ApiCallers"
 import { Regions } from "./Constants";
 import { Tournament } from "../../shared/TournamentSchema";
 
-const teams = ["G2", "SEN", "C9", "NRG", "FURIA", "LEV", "MIBR", "2G", "100T", "LOUD", "EG", "KRU"];
-
-
 const duelists = ["Jett", "Neon", "Yoru", "Raze", "Phoenix", "Reyna", "Waylay", "Iso"];
 const initiators = ["Breach", "Sova", "Skye", "Tejo", "KAYO", "Fade", "Gekko"];
 const controllers = ["Astra", "Brimstone", "Omen", "Viper", "Harbor", "Clove"]

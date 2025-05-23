@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import pool from '../db';
 import { GenerateSelectStatement, GetFromDatabase, AddWhereClause } from '../Select';
 
 const router = Router();
@@ -20,18 +19,18 @@ router.get('/api/teamsByRegion', async (req: Request, res: Response) => {
     await GetFromDatabase(query, res);
 });
 
-router.get('/api/teamsByTournament', async (req: Request, res: Response) => {
+router.get('/api/teamsByTournamentId', async (req: Request, res: Response) => {
 
-    const tournament = req.query.tournament as string;
+    const tournamentId = req.query.tournamentId as string;
 
-    if (!tournament) {
+    if (!tournamentId) {
         res.status(400).json({ error: "Tournament is required" });
         return;
     }
 
     const query = AddWhereClause(
         GenerateSelectStatement("TournamentResults", ["TeamName"]),
-        `WHERE "TournamentName" = '${tournament}'`
+        `WHERE "TournamentId" = '${tournamentId}'`
     );
     await GetFromDatabase(query, res);
 });

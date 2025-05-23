@@ -1,9 +1,9 @@
 import { toInputDateString } from "./Helpers";
 import { z } from "zod";
 
-export const TeamInfo = z.object({
+export const TeamInfoSchema = z.object({
   Name: z.string(),
-  Placement: z.number().optional()
+  Placement: z.number().nullable()
 })
 
 export const TournamentSchema = z.object({
@@ -13,8 +13,7 @@ export const TournamentSchema = z.object({
   StartDate: z.string(),
   EndDate: z.string(),
   Completed: z.boolean(),
-  Winner: z.string(),
-  Teams: z.array(z.string()).optional().default([]),
+  Teams: z.array(TeamInfoSchema).optional().default([]),
 });
 
 
@@ -23,6 +22,7 @@ export const TournamentSchema = z.object({
 export const TournamentArraySchema = z.array(TournamentSchema);
 
 // Infer TypeScript type from the schema (optional but recommended)
+export type TeamInfo = z.infer<typeof TeamInfoSchema>;
 export type Tournament = z.infer<typeof TournamentSchema>;
 
 export function FixDates(data: any) {

@@ -58,11 +58,11 @@ export function useAllTeamsByRegions(regions: Regions[]) {
   return teamsByRegion;
 }
 
-export function useTeamsByTournament(tournament: string) {
+export function useTeamsByTournamentId(tournamentId: number) {
     const [teams, setTeams] = useState<string[]>([]);
 
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${TEAMSBYTOURNAMENTROUTE}?tournament=${encodeURIComponent(tournament)}`)
+        fetch(`http://localhost:${PORT}/${TEAMSBYTOURNAMENTROUTE}?tournamentId=${encodeURIComponent(tournamentId)}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch teams by tournament");
             return res.json();
