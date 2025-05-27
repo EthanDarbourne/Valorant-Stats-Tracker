@@ -4,6 +4,7 @@ import { updateTournament } from "./ApiPosters";
 import { Tournament } from "../../shared/TournamentSchema";
 import { useTournaments } from "./ApiCallers";
 import { toInputDateString } from "../../shared/Helpers";
+import HomeButton from './components/ui/HomeButton';
 
 export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -167,6 +168,7 @@ export default function TournamentsPage() {
           </tbody>
         </table>
       </div>
+      <HomeButton />
     </div>
   );
 }

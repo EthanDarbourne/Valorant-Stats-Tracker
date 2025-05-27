@@ -17,11 +17,11 @@ export async function InsertToDatabase(table: string, object: Record<string, any
   if(returnVal) {
     query +=  ` RETURNING "${returnVal}"`
   }
-  console.log(query)
   try {
     const result = await pool.query(query, values);
     return returnVal ? Number(result.rows[0][returnVal]) : 0;
   } catch (error) {
+    console.log("QUERY " + query)
     console.error("Error inserting into database:", error);
     throw error;
   }
@@ -43,6 +43,7 @@ export async function UpdateInDatabase(table: string, columns: Record<string, an
   try {
     await pool.query(query, [...values, Id]);
   } catch (error) {
+    console.log("QUERY " + query)
     console.error("Error updating database:", error);
     throw error;
   }

@@ -6,9 +6,11 @@ import {
   DragOverlay,
   closestCenter,
 } from "@dnd-kit/core";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTournamentById } from "./ApiCallers";
 import { Tournament } from "../../shared/TournamentSchema";
+import { updateTournamentGamesAndPlacements } from "./ApiPosters";
+import HomeButton from './components/ui/HomeButton';
 
 interface TeamEntry {
   index: number;
@@ -35,7 +37,7 @@ const DraggableOpponent = ({ id, children }: { id: string; children: React.React
   );
 };
 
-const DroppableCell = ({ id, onDrop, children }: { id: string; onDrop: (id: string) => void; children?: React.ReactNode }) => {
+const DroppableCell = ({ id, children }: { id: string; onDrop: (id: string) => void; children?: React.ReactNode }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -51,6 +53,8 @@ const DroppableCell = ({ id, onDrop, children }: { id: string; onDrop: (id: stri
 const EditTournamentPlacements = () => {
 
   const { id } = useParams<{ id: string }>();
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   
   const [tournament, setTournament] = useState<Tournament>({
     Id: -1,
@@ -213,7 +217,63 @@ const EditTournamentPlacements = () => {
     }
   }
 
+  const navigate = useNavigate();
+  const goBack = () => navigate("/add-tournaments");
+
+  const onSubmit = () => {
+
+    let formErrors: { [key: string]: string } = {};
+
+    let needsPlacementChanges = false;
+    let needsGameRearranged = false;
+    let placements = Array(teams.length).fill(-1);
+
+    teams.forEach(team => {
+      if(placements[team.placement - 1] != -1) {
+        needsPlacementChanges = true;
+      }
+      placements[team.placement - 1] = -1;
+      let seenEmpty = false;
+      team.games.forEach(game => {
+        if(game == null) {
+          seenEmpty = true;
+        }
+        else if(seenEmpty) {
+          needsGameRearranged = true;
+        }
+      })
+    })
+    // validate form
+
+    if(needsGameRearranged) {
+      formErrors.RearrangeGames = "There are gaps between games that need to be filled";
+    }
+    if(needsPlacementChanges) {
+      formErrors.MissingPlacements = "Some placements are not filled out";
+    }
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return; // Don't submit if there are errors
+    }
+    // submit games
+
+    updateTournamentGamesAndPlacements({
+      TournamentId: Number(id), 
+      Results: teams.map((team) => ({
+        Name: team.name,
+        Placement: team.placement,
+        Games: team.games,
+      }))
+    });
+
+    goBack();
+  }
+
+
+
+
   return (
+    <div>
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
       <div className="p-4">
         <div className="mb-4 flex gap-2">
@@ -292,6 +352,18 @@ const EditTournamentPlacements = () => {
         </DragOverlay>
       </div>
     </DndContext>
+
+    {errors.RearrangeGames && <div className="text-red-600 text-sm">{errors.RearrangeGames}</div>}
+    {errors.MissingPlacements && <div className="text-red-600 text-sm">{errors.MissingPlacements}</div>}
+
+    <button onClick={_ => onSubmit()} className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+        Save Changes
+      </button>
+      <button onClick={_ => goBack()} className="mt-6 px-4 py-2 rounded">
+        Go Back
+      </button>
+      <HomeButton />
+      </div>
   );
 };
 

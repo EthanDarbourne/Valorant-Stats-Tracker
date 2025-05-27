@@ -1,11 +1,12 @@
 Pass two teams to round and clutch dialogs
-
+Have a selectable game number on AddGamePage depending on how often teams played each other in tournament
 
 Use * in import
+Move home button to consist location (top right?)
+Extract button creating functionality to one place (function with options?)
 
 
 Collect all data when saving map
-
 
 
 Extract common features to separate files

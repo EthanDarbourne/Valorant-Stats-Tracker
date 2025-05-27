@@ -1,0 +1,15 @@
+import { z } from "zod";
+
+export const TournamentResultSchema = z.object({
+    Name: z.string(),
+    Placement: z.number(),
+    Games: z.array(z.string().nullable())
+})
+
+
+export const TournamentResultArraySchema = z.object({
+    TournamentId: z.number(),
+    Results: z.array(TournamentResultSchema)});
+
+export type TournamentResult = z.infer<typeof TournamentResultSchema>;
+export type TournamentResultArray = z.infer<typeof TournamentResultArraySchema>;

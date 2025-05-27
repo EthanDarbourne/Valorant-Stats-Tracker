@@ -1,4 +1,5 @@
 import {z} from "zod"
+import { makeColumnMap } from "./MakeCol";
 
 export const TournamentsTableSchema = z.object({
   Id: z.number(),
@@ -9,3 +10,8 @@ export const TournamentsTableSchema = z.object({
   Completed: z.boolean(),
   Winner: z.string(),
 });
+
+export type Tournament = z.infer<typeof TournamentsTableSchema>;
+export const TournamentColumns = makeColumnMap(TournamentsTableSchema);
+
+export const TournamentsTableName = "Tournaments";

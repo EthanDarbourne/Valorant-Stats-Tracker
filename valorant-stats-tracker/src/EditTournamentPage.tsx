@@ -4,6 +4,7 @@ import { useAllTeamsByRegions, useTournamentById } from './ApiCallers';
 import { Tournament } from '../../shared/TournamentSchema';
 import { updateTournament } from './ApiPosters';
 import { RegionList } from './Constants';
+import HomeButton from './components/ui/HomeButton';
 
 const EditTournamentPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -162,6 +163,7 @@ const EditTournamentPage = () => {
       <button onClick={_ => goBack()} className="mt-6 px-4 py-2 rounded">
         Go Back
       </button>
+      <HomeButton />
     </div>
   );
 };

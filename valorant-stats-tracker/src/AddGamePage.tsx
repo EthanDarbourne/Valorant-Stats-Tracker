@@ -8,6 +8,7 @@ import { useGameContext } from "@/GameContext";
 import { useMaps, useTeamsByRegion, useTournaments } from "./ApiCallers"
 import { Regions } from "./Constants";
 import { Tournament } from "../../shared/TournamentSchema";
+import HomeButton from "./components/ui/HomeButton";
 
 const duelists = ["Jett", "Neon", "Yoru", "Raze", "Phoenix", "Reyna", "Waylay", "Iso"];
 const initiators = ["Breach", "Sova", "Skye", "Tejo", "KAYO", "Fade", "Gekko"];
@@ -192,7 +193,7 @@ export default function AddGamePage() {
         name="tournament"
         value={formData.tournament}
         onChange={handleChange}
-        className="w-full border rounded-md p-2 bg-white"
+        className="w-1/3 border rounded-md p-2 bg-white"
       >
         <option key="" value="">Select Tournament</option>
         {tournaments.map(t => t.Name).map(t => (<option key={t} value={t}>{t}</option>))}
@@ -202,7 +203,7 @@ export default function AddGamePage() {
           placeholder="Game Title (e.g., Grand Finals)"
           value={formData.title}
           onChange={handleChange}
-          className="text-black w-1/2"
+          className="text-black w-1/3"
         />
         <select
           name="mapCount"
@@ -384,6 +385,7 @@ export default function AddGamePage() {
         <Button onClick={() => navigate("/")}>
           Cancel
         </Button>
+        <HomeButton />
       </div>
     </div>
   );

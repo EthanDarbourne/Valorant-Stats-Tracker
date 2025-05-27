@@ -10,6 +10,7 @@ export const TOURNAMENTSBYIDROUTE = "api/tournamentById"
 export const TEAMSBYREGIONROUTE = "api/teamsByRegion"
 export const TEAMSBYTOURNAMENTROUTE = "api/teamsByTournament"
 export const SAVETOURNAMENTROUTE = "api/saveTournament"
+export const SAVETOURNAMENTRESULTSROUTE = "api/saveTournamentResults"
 
 export enum Regions {
     AMER,

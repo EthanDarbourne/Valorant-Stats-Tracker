@@ -1,7 +1,10 @@
 
 import { Router, Request, Response } from 'express';
 import pool from './db';
-
+import { QueryBuilder } from './QueryBuilder';
+import { TournamentResultColumns, TournamentResultsSchema } from './TableSchemas/TournamentResultsTable';
+import { TeamColumns, TeamTableName } from './TableSchemas/TeamsTable';
+import { SQLComparator } from "./Helpers";
 
 export function GenerateSelectStatement(tableName: string, columns: string[]): string {
     if (!tableName || columns.length === 0) {

@@ -3,7 +3,11 @@ import { GenerateSelectStatement, GetFromDatabase, SelectFromTableWhere } from '
 import { InsertToDatabase, UpdateInDatabase } from "../Insert";
 import { TournamentsTableSchema } from '../TableSchemas/TournamentsTable';
 import { FixDates, TeamInfo, TournamentSchema } from "../../../shared/TournamentSchema"
+import { TournamentResultArraySchema } from "../../../shared/TournamentResultsSchema";
 import { DeleteFromTable } from '../Delete';
+import { UpdatePlacement } from '../TableSchemas/TournamentResultsTable';
+import { DeleteAllTournamentGames } from '../TableSchemas/TournamentGamesTable';
+import { SelectTeamIdsByName } from '../TableSchemas/TeamsTable';
 
 const router = Router();
 
@@ -47,24 +51,21 @@ async function UpdateTournamentResults(tournamentId: number, teamNames: TeamInfo
     throw new Error("Invalid TournamentId");
   }
 
-  try {
-    // Step 1: Delete previous results
-    await DeleteFromTable("TournamentResults", {TournamentId: tournamentId});
+  // Step 1: Delete previous results
+  await DeleteFromTable("TournamentResults", {TournamentId: tournamentId});
 
-    // Step 2: Insert new results using InsertToDatabase
-    for (const team of teamNames) {
-      await InsertToDatabase("TournamentResults", {
-        TournamentId: tournamentId,
-        Team: team.Name,
-        Placement: team.Placement
-      });
-    }
+  // Step 2: Insert new results using InsertToDatabase
+  const teams = await SelectTeamIdsByName(teamNames.map(x => x.Name));
 
-    console.log(`TournamentResults updated for TournamentId ${tournamentId}`);
-  } catch (error) {
-    console.error("Error updating tournament results:", error);
-    throw error;
+  for (const team of teamNames) {
+    await InsertToDatabase("TournamentResults", {
+      TournamentId: tournamentId,
+      TeamId: teams.find(x => x.Name == team.Name)?.Id,
+      Placement: team.Placement
+    });
   }
+
+  console.log(`TournamentResults updated for TournamentId ${tournamentId}`);
 }
 
 router.post("/api/saveTournament", async (req: Request, res: Response) => {
@@ -89,9 +90,48 @@ router.post("/api/saveTournament", async (req: Request, res: Response) => {
 
     res.status(201).json({ message: "Tournament created successfully" , Id: parsed.data.Id });
   } catch (error) {
-    console.error("Database insert error:", error);
     res.status(500).json({ error: "Failed to insert tournament into database" });
   }
 });
+
+router.post("/api/saveTournamentResults", async (req: Request, res: Response) => {
+  const parsed = TournamentResultArraySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid tournament data", details: parsed.error.errors });
+    return;
+  }
+
+
+  try {
+    const tournamentId = parsed.data.TournamentId;
+    const results = parsed.data.Results;
+
+    const teamNames = results.map(x => x.Name)
+    const teams = await SelectTeamIdsByName(teamNames);
+
+
+    // Update placements of teams in tournament (rows should already exist)
+    results.forEach(async res => {
+      const id = teams.find(x => x.Name == res.Name)?.Id;
+      if(id) {
+        await UpdatePlacement({TournamentId: tournamentId, TeamId: id, Placement: res.Placement})
+      }
+      else {
+        console.log("Couldn't find id for team " + res.Name);
+      }
+    });
+
+    // Remove all games for tournament id
+    await DeleteAllTournamentGames(tournamentId);
+
+    // insert into table
+    // await InsertTournamentGames();
+
+    res.status(201).json({ message: "Tournament Results created successfully" , Id: parsed.data.TournamentId });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to insert tournament into database" });
+  }
+});
+
 
 export default router;
