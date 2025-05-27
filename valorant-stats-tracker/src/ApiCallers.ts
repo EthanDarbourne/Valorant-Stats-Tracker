@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MAPSROUTE, PORT, Regions, TEAMSBYREGIONROUTE, TEAMSBYTOURNAMENTROUTE, TOURNAMENTSROUTE, TOURNAMENTSBYIDROUTE } from './Constants';
-import { FixDates, FixDatesInArray, TournamentArraySchema, TournamentSchema } from "../../shared/TournamentSchema";
+import { FixDates, TournamentArraySchema, TournamentSchema } from "../../shared/TournamentSchema";
 
 export function useMaps() {
     const [maps, setMaps] = useState<string[]>([]);
@@ -87,7 +87,7 @@ export function useTournaments(setTournaments: React.Dispatch<React.SetStateActi
         .then((data) => {
             const result = TournamentArraySchema.safeParse(data);
             if (result.success) {
-                data = FixDatesInArray(result.data);
+                data = result.data//FixDatesInArray(result.data);
                 setTournaments(data);
             } else {
                 console.error("Validation failed:", result.error);

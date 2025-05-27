@@ -15,3 +15,8 @@ Extract common features to separate files
 
 Later:
 Load from/Save to database
+
+
+Backend:
+Separate Helper.ts functions into proper files
+add validation to results from database (using zod)

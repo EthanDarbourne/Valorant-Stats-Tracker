@@ -16,12 +16,8 @@ export const TournamentSchema = z.object({
   Teams: z.array(TeamInfoSchema).optional().default([]),
 });
 
-
-
-// If you're fetching an array of tournaments
 export const TournamentArraySchema = z.array(TournamentSchema);
 
-// Infer TypeScript type from the schema (optional but recommended)
 export type TeamInfo = z.infer<typeof TeamInfoSchema>;
 export type Tournament = z.infer<typeof TournamentSchema>;
 

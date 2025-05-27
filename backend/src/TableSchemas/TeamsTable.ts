@@ -5,16 +5,28 @@ import pool from "../db";
 import { SQLComparator } from "../Helpers";
 
 
-export const TeamsSchema = z.object({
+export const TeamsTableSchema = z.object({
   Id: z.number(),
   Name: z.string(),
   Region: z.string()
 })
 
-export type Team = z.infer<typeof TeamsSchema>;
-export const TeamColumns = makeColumnMap(TeamsSchema);
+export type TeamRow = z.infer<typeof TeamsTableSchema>;
+export const TeamColumns = makeColumnMap(TeamsTableSchema);
 export const TeamTableName = "Teams";
 
+
+export async function GetTeamsByRegion(region: string): Promise<string[]> {
+  const qb = new QueryBuilder();
+
+  qb.Select().Selectable(TeamColumns.Name)
+    .From(TeamTableName)
+    .WhereClause()
+    .WhereSingle([TeamColumns.Region, SQLComparator.EQUAL, region]);
+
+  const result = await qb.Execute(pool);
+  return result.rows;
+}
 
 export interface TeamIdentity {
   Id: number,
@@ -34,5 +46,22 @@ export async function SelectTeamIdsByName(names: string[]): Promise<TeamIdentity
   });
 
   const result = await qb.Execute(pool);
-  return result.rows.map(x => ({Id: x.Id, Name: x.Name}))
+  return result.rows.map(x => ({Id: x.Id, Name: x.Name}));
+}
+
+
+export async function SelectTeamNameByIds(ids: number[]): Promise<TeamIdentity[]> {
+
+  const qb = new QueryBuilder();
+  qb.Select().Selectable(TeamColumns.Id).Selectable(TeamColumns.Name)
+    .From(TeamTableName)
+    .WhereClause();
+  
+  ids.forEach((id, index) => {
+    if(index > 0)qb.WhereOp(SQLComparator.OR);
+    qb.WhereSingle( [TeamColumns.Id, SQLComparator.EQUAL, id])
+  });
+
+  const result = await qb.Execute(pool);
+  return result.rows.map(x => ({Id: x.Id, Name: x.Name}));
 }

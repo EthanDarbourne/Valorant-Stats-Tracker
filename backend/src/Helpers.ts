@@ -1,3 +1,4 @@
+import { Response } from "express";
 
 
 
@@ -43,6 +44,58 @@ export function toInputDateString(dateString: string): string {
   return new Date(dateString).toISOString().split("T")[0];
 }
 
+export const RESPONSE_OK = 200;               // Generic success
+export const RESPONSE_CREATED = 201;          // Resource successfully created
+export const RESPONSE_NO_CONTENT = 204;       // Success, but no content returned
+
+export const RESPONSE_BAD_REQUEST = 400;      // Invalid request from client
+export const RESPONSE_UNAUTHORIZED = 401;     // Authentication required or failed
+export const RESPONSE_FORBIDDEN = 403;        // Authenticated but not allowed
+export const RESPONSE_NOT_FOUND = 404;        // Resource not found
+
+export const RESPONSE_CONFLICT = 409;         // Conflict with current state (e.g., duplicate resource)
+
+export const RESPONSE_INTERNAL_ERROR = 500;   // Generic server error
+export const RESPONSE_NOT_IMPLEMENTED = 501;  // Server doesn’t support functionality
+export const RESPONSE_SERVICE_UNAVAILABLE = 503; // Server unavailable (maintenance, overloaded, etc.)
+
+export function SetResponse(res: Response, status: number, result: any) {
+  return res.status(status).json(result);
+}
+
+export async function MakeCall(
+    dbCall: () => Promise<any>,
+    res: Response,
+    errorMsg: string,
+    goodStatus: number = RESPONSE_OK,
+    badStatus: number = RESPONSE_INTERNAL_ERROR
+) {
+    try {
+        await dbCall();
+        SetResponse(res, goodStatus, {});
+    }
+    catch (error) {
+        console.log("Failed to MakeCall " + errorMsg);
+        SetResponse(res, badStatus, { Error: "Error fetching from database with " + errorMsg  });
+    }
+}
+
+export async function MakeCallWithDatabaseResult(
+    dbCall: () => Promise<any>,
+    res: Response,
+    errorMsg: string,
+    goodStatus: number = RESPONSE_OK,
+    badStatus: number = RESPONSE_INTERNAL_ERROR
+) {
+    try {
+        const result = await dbCall();
+        SetResponse(res, goodStatus, result);
+    }
+    catch (error) {
+        console.log("Failed to MakeCallWithDatabaseResult " + errorMsg + error);
+        SetResponse(res, badStatus, { Error: "Error fetching from database with " + errorMsg });
+    }
+}
 
 export const SQLComparator = {
   EQUAL: '=',

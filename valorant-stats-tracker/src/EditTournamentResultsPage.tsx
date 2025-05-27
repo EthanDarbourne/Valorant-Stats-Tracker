@@ -314,7 +314,7 @@ const EditTournamentPlacements = () => {
                   <DroppableCell
                     key={gameIndex}
                     id={`cell__${team.name}__${gameIndex}`}
-                    onDrop={(e) => {}}
+                    onDrop={() => {}}
                   >
                     {opponent ? (
                       <div className="flex items-center justify-between w-full">

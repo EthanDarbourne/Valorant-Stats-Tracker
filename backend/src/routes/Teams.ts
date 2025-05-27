@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { GenerateSelectStatement, GetFromDatabase, AddWhereClause } from '../Select';
+import { GetTeamsByRegion } from '../TableSchemas/TeamsTable';
+import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST } from '../Helpers';
+import { GetTeamsByTournamentId } from '../TableSchemas/TournamentResultsTable';
 
 const router = Router();
 
@@ -8,15 +10,10 @@ router.get('/api/teamsByRegion', async (req: Request, res: Response) => {
     const region = req.query.region as string;
 
     if (!region) {
-        res.status(400).json({ error: "Region is required" });
+        res.status(RESPONSE_BAD_REQUEST).json({ error: "Region is required" });
         return;
     }
-
-    const query = AddWhereClause(
-        GenerateSelectStatement("Teams", ["Name"]),
-        `WHERE "Region" = '${region}'`
-    );
-    await GetFromDatabase(query, res);
+    await MakeCallWithDatabaseResult(async () => await GetTeamsByRegion(region), res, "GetTeamsByRegion:" + region);
 });
 
 router.get('/api/teamsByTournamentId', async (req: Request, res: Response) => {
@@ -24,15 +21,12 @@ router.get('/api/teamsByTournamentId', async (req: Request, res: Response) => {
     const tournamentId = req.query.tournamentId as string;
 
     if (!tournamentId) {
-        res.status(400).json({ error: "Tournament is required" });
+        res.status(RESPONSE_BAD_REQUEST).json({ error: "Tournament is required" });
         return;
     }
-
-    const query = AddWhereClause(
-        GenerateSelectStatement("TournamentResults", ["TeamName"]),
-        `WHERE "TournamentId" = '${tournamentId}'`
-    );
-    await GetFromDatabase(query, res);
+    await MakeCallWithDatabaseResult(
+        async () => (await GetTeamsByTournamentId(Number(tournamentId))).map(x => x.TeamId),
+        res, "GetTeamsByTournamentId:" + tournamentId);
 });
 
 export default router;

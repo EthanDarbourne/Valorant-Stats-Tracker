@@ -15,7 +15,7 @@ export const TournamentGamesTableSchema = z.object({
   PlayedAt: z.date(),
 });
 
-export type TournamentGame = z.infer<typeof TournamentGamesTableSchema>;
+export type TournamentGameRow = z.infer<typeof TournamentGamesTableSchema>;
 export const TournamentGameColumns = makeColumnMap(TournamentGamesTableSchema);
 export const TournamentGameTableName = "TournamentGames";
 
