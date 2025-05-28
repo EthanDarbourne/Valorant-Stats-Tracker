@@ -9,7 +9,7 @@ export const TournamentGamesTableSchema = z.object({
   TournamentId: z.number(),
   Team1Id: z.number(),
   Team2Id: z.number(),
-  WinnerId: z.number(),
+  WinnerId: z.number().nullable(),
   MatchNumber: z.number(),
   MapCount: z.number(),
   PlayedAt: z.date(),
@@ -25,15 +25,27 @@ export interface TournamentGameInsert {
   gameIds: number[]
 }
 
-export async function DeleteAllTournamentGames(tournamentId: number) {
-    const qb = new QueryBuilder();
-
+export async function DeleteAllTournamentGames(qb: QueryBuilder, tournamentId: number) {
     qb.Delete(TournamentGameTableName)
-    .Where([[TournamentGameColumns.TournamentId, SQLComparator.EQUAL, tournamentId]]);
+    .WhereClause().WhereSingle([TournamentGameColumns.TournamentId, SQLComparator.EQUAL, tournamentId]);
 
-    await qb.Execute(pool);
+    await qb.Execute();
 }
 
-export async function InsertTournamentGames(games: TournamentGameInsert) {
+export async function InsertTournamentGames(qb: QueryBuilder, tournamentId: number, teamId: number, opponentIds: number[]) {
+    if(opponentIds.length == 0)return;
 
+    const prev: Record<number, number> = {};
+
+    const [Id, ...columnsWithoutId] = Object.keys(TournamentGameColumns);
+
+    qb.Insert(TournamentGameTableName, columnsWithoutId);
+
+    opponentIds.forEach(id => {
+        const cur = prev[id] ? prev[id] : 1;
+        qb.AddValue([tournamentId, teamId, id, null, cur, 3, new Date()]);
+        prev[id] = cur + 1;
+    });
+
+    await qb.Execute();
 }

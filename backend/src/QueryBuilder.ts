@@ -1,8 +1,10 @@
-import { Pool, QueryResult } from "pg";
+import { Pool, PoolClient, QueryResult } from "pg";
 import { ColumnIdentifier, Quote, QuoteAll, SQLComparator, SQLJoinType } from "./Helpers";
 
 export class QueryBuilder {
-    private str: string;
+    private str: string = "";
+    private pool: Pool;
+    private client: PoolClient | null = null;
 
     private inSelect: boolean = false;
     private selectCount: number = 0;
@@ -11,8 +13,8 @@ export class QueryBuilder {
 
     private insertCount: number = 0;
 
-    constructor(initial: string = "") {
-        this.str = initial;
+    constructor(pool: Pool) {
+        this.pool = pool;
     }
 
     append(value: string): this {
@@ -22,6 +24,11 @@ export class QueryBuilder {
 
     clear(): this {
         this.str = "";
+        this.parameterCount = 0;
+        this.parameters = [];
+        this.inSelect = false;
+        this.selectCount = 0;
+        this.insertCount = 0;
         return this;
     }
 
@@ -128,6 +135,7 @@ export class QueryBuilder {
     Where(clauses: WhereClause[]) {
         this.WhereClause();
         this.append(clauses.map(x => `${Quote(x[0])} ${x[1]} ${this.GetParameterString()}`).join(" AND "));
+        this.parameters.push(...clauses.map(x => x[2]));
         return this;
     }
 
@@ -152,9 +160,50 @@ export class QueryBuilder {
         return this;
     }
 
-    async Execute(pool: Pool): Promise<QueryResult<any>> {
+    async BeginTransaction() {
+        if(this.client == null) {
+            console.trace("Beginning transaction before client connected");
+            throw new Error("Not connected");
+        }
+        await this.pool.query("BEGIN");
+    }
+    
+    async Connect() {
+        if(this.client != null) {
+            console.trace("Connection already made");
+            throw new Error("Already connected");
+        }
+        this.client = await this.pool.connect();
+    }
+
+    async Commit() {
+        if(this.client == null) {
+            console.trace("Committing before client connected");
+            throw new Error("Not connected");
+        }
+        await this.client.query("COMMIT");
+    }
+
+    async Rollback() {
+        if(this.client == null) {
+            console.trace("Rollback before client connected");
+            throw new Error("Not connected");
+        }
+        await this.pool.query("ROLLBACK");
+    }
+
+    async Execute(): Promise<QueryResult<any>> {
+        
         try {
-            return await pool.query(this.toString(), this.parameters);
+            let result;
+            if(this.client != null) {
+                result = await this.client.query(this.toString(), this.parameters);
+            }
+            else {
+                result = await this.pool.query(this.toString(), this.parameters);
+            }
+            this.clear();
+            return result;
         }
         catch (error) {
             console.trace(`Query: ${Quote(this.toString())}\r\nParameters: ${this.parameters}`);

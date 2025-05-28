@@ -16,42 +16,36 @@ export const TournamentResultColumns = makeColumnMap(TournamentResultsTableSchem
 export const TournamentResultsName = "TournamentResults";
 
 
-export async function UpdatePlacement(result: TournamentResultRow) {
-    const qb = new QueryBuilder();
+export async function UpdatePlacement(qb: QueryBuilder, result: TournamentResultRow) {
     qb.Update(TournamentResultsName)
         .Set([[TournamentResultColumns.Placement, result.Placement]])
         .Where([[TournamentResultColumns.TournamentId, SQLComparator.EQUAL, result.TournamentId],
                 [TournamentResultColumns.TeamId, SQLComparator.EQUAL, result.TeamId]])
 
-    await qb.Execute(pool);
+    await qb.Execute();
 }
 
-export async function InsertTournamentResult(result: TournamentResultRow) {
-    const qb = new QueryBuilder();
+export async function InsertTournamentResult(qb: QueryBuilder, result: TournamentResultRow) {
     qb.Insert(TournamentResultsName, Object.keys(TournamentResultColumns))
         .AddValue(Object.values(result));
 
-    await qb.Execute(pool);
+    await qb.Execute();
 }
 
-export async function GetTeamsByTournamentId(tournamentId: number): Promise<TournamentResultRow[]> {
-    const qb = new QueryBuilder();
-
+export async function GetTeamsByTournamentId(qb: QueryBuilder, tournamentId: number): Promise<TournamentResultRow[]> {
     qb.SelectAll()
         .From(TournamentResultsName)
         .WhereClause()
         .WhereSingle([TournamentResultColumns.TournamentId, SQLComparator.EQUAL, tournamentId]);
 
-    const result = await qb.Execute(pool);
+    const result = await qb.Execute();
     return result.rows.map(x => TournamentResultsTableSchema.parse(x));
 }
 
-export async function DeleteResultsForTournamentId(tournamentId: number) {
-    const qb = new QueryBuilder();
-
+export async function DeleteResultsForTournamentId(qb: QueryBuilder, tournamentId: number) {
     qb.Delete(TournamentResultsName)
         .WhereClause()
         .WhereSingle([TournamentResultColumns.TournamentId, SQLComparator.EQUAL, tournamentId]);
 
-    await qb.Execute(pool);
+    await qb.Execute();
 }

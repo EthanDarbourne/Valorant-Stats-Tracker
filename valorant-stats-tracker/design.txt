@@ -1,0 +1,12 @@
+
+
+
+Pages:
+
+AddTournament (list of all tournaments)
+EditTeams (Edit teams in tournament)
+EditPlacements (Edit placements in tournament)
+AddGame (VOD review a game, can link to tournament)
+
+AgentsPage
+

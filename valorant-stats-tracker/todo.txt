@@ -12,11 +12,17 @@ Collect all data when saving map
 Extract common features to separate files
 
 
+Important:
+Option to not fill out placements when scheduling games
+
 
 Later:
 Load from/Save to database
 
 
 Backend:
+Transactions!!!
 Separate Helper.ts functions into proper files
 add validation to results from database (using zod)
+
+History of some tables for backups and reverting

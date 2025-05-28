@@ -15,14 +15,13 @@ export const MapsColumns = makeColumnMap(MapsSchema);
 export const MapsTableName = "Maps";
 
 
-export async function GetMapsList(): Promise<string[]> {
+export async function GetMapsList(qb: QueryBuilder): Promise<string[]> {
 
-  const qb = new QueryBuilder();
   qb.Select().Selectable(MapsColumns.Name)
     .From(MapsTableName)
     .WhereClause()
     .WhereSingle([MapsColumns.Active, SQLComparator.EQUAL, true]);
   
-  const result = await qb.Execute(pool);
+  const result = await qb.Execute();
   return result.rows;
 }

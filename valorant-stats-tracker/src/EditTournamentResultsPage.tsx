@@ -152,10 +152,6 @@ const EditTournamentPlacements = () => {
   }
   const defaultValue: [number, number] = [-1,-1]
 
-  
-
-  
-
   function updateGamePair(
     pair1: [number, number],
     pair2: [number, number],
@@ -220,7 +216,7 @@ const EditTournamentPlacements = () => {
   const navigate = useNavigate();
   const goBack = () => navigate("/add-tournaments");
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
 
     let formErrors: { [key: string]: string } = {};
 
@@ -249,7 +245,8 @@ const EditTournamentPlacements = () => {
       formErrors.RearrangeGames = "There are gaps between games that need to be filled";
     }
     if(needsPlacementChanges) {
-      formErrors.MissingPlacements = "Some placements are not filled out";
+        // placements don't need to be filled out yet (use 0 as placeholder for null)
+    //   formErrors.MissingPlacements = "Some placements are not filled out";
     }
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
@@ -257,11 +254,11 @@ const EditTournamentPlacements = () => {
     }
     // submit games
 
-    updateTournamentGamesAndPlacements({
+    await updateTournamentGamesAndPlacements({
       TournamentId: Number(id), 
       Results: teams.map((team) => ({
         Name: team.name,
-        Placement: team.placement,
+        Placement: team.placement == 0 ? null : team.placement,
         Games: team.games,
       }))
     });

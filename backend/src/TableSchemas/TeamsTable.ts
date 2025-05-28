@@ -16,15 +16,14 @@ export const TeamColumns = makeColumnMap(TeamsTableSchema);
 export const TeamTableName = "Teams";
 
 
-export async function GetTeamsByRegion(region: string): Promise<string[]> {
-  const qb = new QueryBuilder();
+export async function GetTeamsByRegion(qb: QueryBuilder, region: string): Promise<string[]> {
 
   qb.Select().Selectable(TeamColumns.Name)
     .From(TeamTableName)
     .WhereClause()
     .WhereSingle([TeamColumns.Region, SQLComparator.EQUAL, region]);
 
-  const result = await qb.Execute(pool);
+  const result = await qb.Execute();
   return result.rows;
 }
 
@@ -33,35 +32,35 @@ export interface TeamIdentity {
   Name: string
 }
 
-export async function SelectTeamIdsByName(names: string[]): Promise<TeamIdentity[]> {
+export async function SelectTeamIdsByName(qb: QueryBuilder, names: string[]): Promise<TeamIdentity[]> {
+    if(names.length == 0)return [];
 
-  const qb = new QueryBuilder();
-  qb.Select().Selectable(TeamColumns.Id).Selectable(TeamColumns.Name)
-    .From(TeamTableName)
-    .WhereClause();
-  
-  names.forEach((name, index) => {
-    if(index > 0)qb.WhereOp(SQLComparator.OR);
-    qb.WhereSingle( [TeamColumns.Name, SQLComparator.EQUAL, name])
-  });
+    qb.Select().Selectable(TeamColumns.Id).Selectable(TeamColumns.Name)
+        .From(TeamTableName)
+        .WhereClause();
+    
+    names.forEach((name, index) => {
+        if(index > 0)qb.WhereOp(SQLComparator.OR);
+        qb.WhereSingle( [TeamColumns.Name, SQLComparator.EQUAL, name])
+    });
 
-  const result = await qb.Execute(pool);
-  return result.rows.map(x => ({Id: x.Id, Name: x.Name}));
+    const result = await qb.Execute();
+    return result.rows.map(x => ({Id: x.Id, Name: x.Name}));
 }
 
 
-export async function SelectTeamNameByIds(ids: number[]): Promise<TeamIdentity[]> {
+export async function SelectTeamNameByIds(qb: QueryBuilder, ids: number[]): Promise<TeamIdentity[]> {
+    if(ids.length == 0)return [];
 
-  const qb = new QueryBuilder();
-  qb.Select().Selectable(TeamColumns.Id).Selectable(TeamColumns.Name)
-    .From(TeamTableName)
-    .WhereClause();
-  
-  ids.forEach((id, index) => {
-    if(index > 0)qb.WhereOp(SQLComparator.OR);
-    qb.WhereSingle( [TeamColumns.Id, SQLComparator.EQUAL, id])
-  });
+    qb.Select().Selectable(TeamColumns.Id).Selectable(TeamColumns.Name)
+        .From(TeamTableName)
+        .WhereClause();
+    
+    ids.forEach((id, index) => {
+        if(index > 0)qb.WhereOp(SQLComparator.OR);
+        qb.WhereSingle( [TeamColumns.Id, SQLComparator.EQUAL, id])
+    });
 
-  const result = await qb.Execute(pool);
-  return result.rows.map(x => ({Id: x.Id, Name: x.Name}));
+    const result = await qb.Execute();
+    return result.rows.map(x => ({Id: x.Id, Name: x.Name}));
 }

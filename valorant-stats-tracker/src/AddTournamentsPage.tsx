@@ -50,6 +50,7 @@ export default function TournamentsPage() {
   const handleSaveTournament = async (t: Tournament) => {
     console.log("Save tournament:", t);
     t.Id = await updateTournament(t);
+    console.log("Saved tournament with id:" + t.Id);
   };
 
   const handleSaveAll = () => {

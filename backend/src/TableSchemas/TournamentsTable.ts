@@ -23,31 +23,26 @@ export const TournamentColumns = makeColumnMap(TournamentsTableSchema);
 
 export const TournamentsTableName = "Tournaments";
 
-export async function GetAllTournaments(): Promise<TournamentRow[]> {
-    const qb = new QueryBuilder();
+export async function GetAllTournaments(qb: QueryBuilder): Promise<TournamentRow[]> {
+     qb.SelectAll().From(TournamentsTableName);
 
-    qb.SelectAll().From(TournamentsTableName);
-
-    const result = await qb.Execute(pool);
+    const result = await qb.Execute();
     return TournamentRowArraySchema.parse(result.rows.map(FixDates));
 }
 
-export async function GetTournamentById(id: number): Promise<TournamentRow> {
-    const qb = new QueryBuilder();
-
+export async function GetTournamentById(qb: QueryBuilder, id: number): Promise<TournamentRow> {
     qb.SelectAll().From(TournamentsTableName)
         .WhereClause()
         .WhereSingle([TournamentColumns.Id, SQLComparator.EQUAL, id]);
 
-    const result = await qb.Execute(pool);
+    const result = await qb.Execute();
     if(result.rowCount == 0) {
         throw new Error("Didn't find tournament with id: " + id.toString());
     }
     return TournamentsTableSchema.parse(FixDates(result.rows[0]));
 }
 
-export async function InsertTournament(tournament: TournamentRow) {
-    const qb = new QueryBuilder();
+export async function InsertTournament(qb: QueryBuilder, tournament: TournamentRow) {
     // id is serial and doesn't need to be inserted
     const { Id, ...tournamentRowWithoutId } = tournament;
 
@@ -55,12 +50,11 @@ export async function InsertTournament(tournament: TournamentRow) {
         .AddValue(Object.values(tournamentRowWithoutId))
         .GetReturnValue(TournamentColumns.Id);
 
-    const result = await qb.Execute(pool);
+    const result = await qb.Execute();
     return Number(result.rows[0][TournamentColumns.Id]);
 }
 
-export async function UpdateTournament(tournament: TournamentRow) {
-    const qb = new QueryBuilder();
+export async function UpdateTournament(qb: QueryBuilder, tournament: TournamentRow) {
     // id is serial and doesn't need to be inserted
     const { Id, ...tournamentRowWithoutId } = tournament;
 
@@ -69,5 +63,22 @@ export async function UpdateTournament(tournament: TournamentRow) {
         .WhereClause()
         .WhereSingle([TournamentColumns.Id, SQLComparator.EQUAL, tournament.Id]);
 
-    await qb.Execute(pool);
+    await qb.Execute();
+}
+
+export async function SetTournamentWinner(qb: QueryBuilder, tournamentId: number, winnerId: number) {
+    qb.Update(TournamentsTableName)
+        .Set([[TournamentColumns.Winner, winnerId]])
+        .WhereClause()
+        .WhereSingle([TournamentColumns.Id, SQLComparator.EQUAL, tournamentId]);
+
+    await qb.Execute();
+}
+
+export async function DeleteTournament(qb: QueryBuilder, tournamentId: number) {
+    qb.Delete(TournamentsTableName)
+        .WhereClause()
+        .WhereSingle([TournamentColumns.Id, SQLComparator.EQUAL, tournamentId]);
+        
+    await qb.Execute();
 }

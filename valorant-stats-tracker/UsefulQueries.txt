@@ -1,0 +1,14 @@
+
+
+
+View all sequences:
+select sequence_schema, sequence_name
+from information_schema.sequences;
+
+Set next value of sequence:
+ALTER SEQUENCE "Teams_new_Id_seq" RESTART WITH 1;
+
+Delete All:
+DELETE FROM "TournamentResults";
+DELETE FROM "TournamentGames";
+DELETE FROM "Tournaments";
