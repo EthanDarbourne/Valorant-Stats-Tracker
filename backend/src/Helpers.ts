@@ -59,7 +59,7 @@ export const RESPONSE_INTERNAL_ERROR = 500;   // Generic server error
 export const RESPONSE_NOT_IMPLEMENTED = 501;  // Server doesn’t support functionality
 export const RESPONSE_SERVICE_UNAVAILABLE = 503; // Server unavailable (maintenance, overloaded, etc.)
 
-export function SetResponse(res: Response, status: number, result: any) {
+export function SetResponse(res: Response, status: number, result?: any) {
   return res.status(status).json(result);
 }
 
@@ -72,12 +72,16 @@ export async function MakeCall(
 ) {
     try {
         await dbCall();
-        SetResponse(res, goodStatus, {});
+        SetResponse(res, goodStatus);
     }
     catch (error) {
         console.log("Failed to MakeCall " + errorMsg);
         SetResponse(res, badStatus, { Error: "Error fetching from database with " + errorMsg  });
     }
+}
+
+export function GetUnique(a: Array<any>) {
+    return Array.from(new Set(a));
 }
 
 export async function MakeCallWithDatabaseResult(

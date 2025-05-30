@@ -35,3 +35,13 @@ export function FixDatesInArray(data: any[]) {
       EndDate: toInputDateString(x.EndDate),
       }));
 }
+
+export const DefaultTournament = {       
+    Id: -1,
+    Name: "",
+    Location: "",
+    StartDate: "",
+    EndDate: "",
+    Completed: false,
+    Teams: []
+}

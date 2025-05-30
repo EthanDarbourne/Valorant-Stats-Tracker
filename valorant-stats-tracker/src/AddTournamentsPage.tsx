@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { updateTournament } from "./ApiPosters";
 import { Tournament } from "../../shared/TournamentSchema";
@@ -7,7 +7,6 @@ import { toInputDateString } from "../../shared/Helpers";
 import HomeButton from './components/ui/HomeButton';
 
 export default function TournamentsPage() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
 
     // inside your component
     const navigate = useNavigate();
@@ -28,7 +27,7 @@ export default function TournamentsPage() {
     ]);
   };
 
-  useTournaments(setTournaments);
+  const [tournaments, setTournaments] = useTournaments();
 
   const handleRemoveTournament = (id: number) => {
     console.log("Delete tournament:", id);

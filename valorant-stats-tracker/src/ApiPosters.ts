@@ -2,9 +2,6 @@ import { PORT, SAVETOURNAMENTRESULTSROUTE, SAVETOURNAMENTROUTE } from "./Constan
 import { Tournament, TournamentSchema } from "../../shared/TournamentSchema";
 import { TournamentResultArray } from "../../shared/TournamentResultsSchema";
 
-
-
-
 export async function updateTournament(tournament: Tournament) {
   // Validate the tournament object
   const parsed = TournamentSchema.safeParse(tournament);

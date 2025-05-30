@@ -17,6 +17,7 @@ router.get('/api/tournaments', async (req: Request, res: Response) => {
     await qb.BeginTransaction();
     await MakeCallWithDatabaseResult(async () => await GetAllTournaments(qb), res, "GetAllTournaments");
     await qb.Commit();
+    qb.Disconnect();
 });
 
 router.get('/api/tournamentById', async (req: Request, res: Response) => {
@@ -43,6 +44,7 @@ router.get('/api/tournamentById', async (req: Request, res: Response) => {
                 throw new Error(`Validation failed: ${parsed.error.message}`);
         }
         await qb.Commit();
+        qb.Disconnect();
         SetResponse(res, RESPONSE_OK, parsed.data);
     }
     catch (error) {
@@ -86,7 +88,7 @@ router.post("/api/saveTournament", async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     const parsed = TournamentSchema.safeParse(req.body);
     if (!parsed.success) {
-        res.status(RESPONSE_BAD_REQUEST).json({ error: "Invalid tournament data", details: parsed.error.errors });
+        SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Invalid tournament data", details: parsed.error.errors });
         return;
     }
 
@@ -104,11 +106,11 @@ router.post("/api/saveTournament", async (req: Request, res: Response) => {
         }
         await UpdateTournamentResults(qb, parsed.data.Id, parsed.data.Teams);
         await qb.Commit();
-        
-        res.status(RESPONSE_CREATED).json({ message: "Tournament created successfully" , Id: parsed.data.Id });
+        qb.Disconnect();
+        SetResponse(res, RESPONSE_CREATED, { message: "Tournament created successfully" , Id: parsed.data.Id });
     } catch (error) {
         console.log(error);
-        res.status(RESPONSE_INTERNAL_ERROR).json({ error: "Failed to insert tournament into database" });
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to insert tournament into database" });
     }
 });
 
@@ -122,7 +124,7 @@ router.post("/api/saveTournamentResults", async (req: Request, res: Response) =>
     const qb = new QueryBuilder(pool);
     const parsed = TournamentResultArraySchema.safeParse(req.body);
     if (!parsed.success) {
-        res.status(RESPONSE_BAD_REQUEST).json({ error: "Invalid tournament data", details: parsed.error.errors });
+        SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Invalid tournament data", details: parsed.error.errors });
         return;
     }
     try {
@@ -154,10 +156,11 @@ router.post("/api/saveTournamentResults", async (req: Request, res: Response) =>
             }
         }
         await qb.Commit();
-        res.status(RESPONSE_CREATED).json({ message: "Tournament Results created successfully" , Id: parsed.data.TournamentId });
+        qb.Disconnect();
+        SetResponse(res, RESPONSE_CREATED, { message: "Tournament Results created successfully" , Id: parsed.data.TournamentId });
     } catch (error) {
         console.log(error);
-        res.status(RESPONSE_INTERNAL_ERROR).json({ error: "Failed to insert tournament into database" });
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to insert tournament into database" });
     }
 });
 
@@ -173,10 +176,11 @@ router.delete("/api/deleteTournament", async (req: Request, res: Response) => {
         await DeleteResultsForTournamentId(qb, tournamentId);
         await DeleteTournament(qb, tournamentId);
         await qb.Commit();
-        res.status(RESPONSE_OK).json({ message: "Tournament successfully deleted"})
+        qb.Disconnect();
+        SetResponse(res, RESPONSE_OK, { message: "Tournament successfully deleted"});
     } catch (error) {
         console.log(error);
-        res.status(RESPONSE_INTERNAL_ERROR).json({ error: "Failed to delete tournament from database" });
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to delete tournament from database" });
     } 
 });
 

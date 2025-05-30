@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import DragAndDropList from "@/components/ui/DragDropList"
 import { useGameContext } from "@/GameContext";
-import { useMaps, useTeamsByRegion, useTournaments } from "./ApiCallers"
-import { Regions } from "./Constants";
-import { Tournament } from "../../shared/TournamentSchema";
+import { useMaps, useTeamsByTournamentId, useTournamentGamesById, useTournaments } from "./ApiCallers"
 import HomeButton from "./components/ui/HomeButton";
+import { Game } from "../../shared/GameSchema";
+import { DefaultTournament, Tournament } from "../../shared/TournamentSchema";
 
 const duelists = ["Jett", "Neon", "Yoru", "Raze", "Phoenix", "Reyna", "Waylay", "Iso"];
 const initiators = ["Breach", "Sova", "Skye", "Tejo", "KAYO", "Fade", "Gekko"];
@@ -20,6 +20,7 @@ export default function AddGamePage() {
   const [formData, setFormData] = useState({
     title: "",
     tournament: "",
+    game: "",
     mapCount: 3,
     mapNumber: 1,
     teamA: "",
@@ -38,18 +39,37 @@ export default function AddGamePage() {
   const [roundDetails, setRoundDetails] = useState(Array(24).fill({ winner: "", notes: "" }));
   const [activeRound, setActiveRound] = useState<number | null>(null);
   const [dialogInput, setDialogInput] = useState({ winner: "", notes: "" });
-
+  
   const [teamAAgents, setTeamAAgents] = useState<string[]>(Array(5).fill(""));
   const [teamBAgents, setTeamBAgents] = useState<string[]>(Array(5).fill(""));
 
-  const maps = useMaps();
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournament, setTournament] = useState<Tournament>(DefaultTournament);
   
-  useTournaments(setTournaments);
-  const teams = useTeamsByRegion(Regions.AMER);
-
+  const maps = useMaps();
+  const [isGameInDatabase, setGameInDatabase] = useState<boolean>(false);
+  
+  const [tournaments, _] = useTournaments();
+  const [teams] = useTeamsByTournamentId(tournament.Id);
+  
   const navigate = useNavigate();
   const { addGame } = useGameContext();
+  
+  const [games, _setGames] = useTournamentGamesById(tournament.Id);
+
+  const handleTournamentChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setTournament(tournaments.find(x => x.Id == Number(e.target.value)) ?? DefaultTournament);
+    if(e.target.value == "") formData.game = "";
+    setGameInDatabase(e.target.value != "");
+    handleChange(e);
+  };
+
+  const handleGameChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const game = games.find(x => x.Id == Number(e.target.value))
+    formData.mapCount = game?.MapCount ?? 1
+    formData.teamA = game?.TeamNameA ?? ""
+    formData.teamB = game?.TeamNameB ?? ""
+    handleChange(e);
+  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -181,6 +201,10 @@ export default function AddGamePage() {
     return empty + " text-white hover:" + empty; // fallback for no winner
   };
 
+  const getFullGameName = (game: Game) => {
+    return `${game.TeamNameA} vs ${game.TeamNameB} BO${game.MapCount} Meeting: ${game.MatchNumber}`
+  }
+
   return (
     <div className="min-h-screen w-screen p-4 space-y-4 text-black bg-white">
 
@@ -190,41 +214,53 @@ export default function AddGamePage() {
 
         {/* Add a list of tournaments that can be selected*/}
         <select
-        name="tournament"
-        value={formData.tournament}
-        onChange={handleChange}
-        className="w-1/3 border rounded-md p-2 bg-white"
-      >
-        <option key="" value="">Select Tournament</option>
-        {tournaments.map(t => t.Name).map(t => (<option key={t} value={t}>{t}</option>))}
-      </select>
-        <Input
-          name="title"
-          placeholder="Game Title (e.g., Grand Finals)"
-          value={formData.title}
-          onChange={handleChange}
-          className="text-black w-1/3"
-        />
-        <select
-          name="mapCount"
-          value={formData.mapCount}
-          onChange={FixMapNumber}
-          className="border rounded-md p-2 text-black"
+            name="tournament"
+            value={formData.tournament}
+            onChange={handleTournamentChange}
+            className="w-1/3 border rounded-md p-2 bg-white"
         >
-          <option value="1">BO1</option>
-          <option value="3">BO3</option>
-          <option value="5">BO5</option>
+            <option key="" value="">Select Tournament</option>
+            {tournaments.map(t => [t.Id, t.Name]).map(t => (<option key={t[1]} value={t[0]}>{t[1]}</option>))}
         </select>
+
+        {isGameInDatabase ?
+            (<select
+                name="game"
+                value={formData.game}
+                onChange={handleGameChange}
+                className="w-1/3 border rounded-md p-2 bg-white"
+                >
+                <option key="" value="">Select Game</option>
+                {games.map(x => [x.Id, getFullGameName(x)]).map(t => (<option key={t[1]} value={t[0]}>{t[1]}</option>))}
+            </select>) : (
+            <input
+                name="game"
+                type="text"
+                placeholder="Enter game name"
+                value={formData.game}
+                onChange={handleChange}
+            />
+        )}
+        {!isGameInDatabase && <select
+            name="mapCount"
+            value={formData.mapCount}
+            onChange={FixMapNumber}
+            className="border rounded-md p-2 text-black"
+        >
+            <option value="1">BO1</option>
+            <option value="3">BO3</option>
+            <option value="5">BO5</option>
+        </select>}
         <div>Map :</div>
         <input
-          type="number"
-          name="mapNumber"
-          value={formData.mapNumber}
-          onChange={handleChange}
-          className="border rounded-md p-2 text-black"
-          min="1"
-          step="1"
-          max={formData.mapCount}
+            type="number"
+            name="mapNumber"
+            value={formData.mapNumber}
+            onChange={handleChange}
+            className="border rounded-md p-2 text-black"
+            min="1"
+            step="1"
+            max={formData.mapCount}
         />
       </div>
 
@@ -237,6 +273,7 @@ export default function AddGamePage() {
             name="teamA"
             value={formData.teamA}
             onChange={handleChange}
+            disabled={isGameInDatabase}
             className="flex-1 border rounded-md p-2 bg-white text-black"
           >
             <option value="">Select Team A</option>
@@ -266,6 +303,7 @@ export default function AddGamePage() {
             name="teamB"
             value={formData.teamB}
             onChange={handleChange}
+            disabled={isGameInDatabase}
             className="flex-1 border rounded-md p-2 bg-white text-black"
             >
             <option value="">Select Team B</option>

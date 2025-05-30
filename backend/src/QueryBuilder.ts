@@ -192,6 +192,14 @@ export class QueryBuilder {
         await this.pool.query("ROLLBACK");
     }
 
+    async Disconnect() {
+        if(this.client == null) { 
+            console.trace("Client not connected yet");
+            throw new Error("Not connected");
+        }
+        this.client.release();
+    }
+
     async Execute(): Promise<QueryResult<any>> {
         
         try {

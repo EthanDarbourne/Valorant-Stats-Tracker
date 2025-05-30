@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { GetTeamsByRegion } from '../TableSchemas/TeamsTable';
-import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST } from '../Helpers';
+import { GetTeamsByRegion, SelectTeamNameByIds } from '../TableSchemas/TeamsTable';
+import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { GetTeamsByTournamentId } from '../TableSchemas/TournamentResultsTable';
+import { TeamArraySchema } from "../../../shared/TeamSchema";
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
 
@@ -12,7 +13,7 @@ router.get('/api/teamsByRegion', async (req: Request, res: Response) => {
     const region = req.query.region as string;
     
     if (!region) {
-        res.status(RESPONSE_BAD_REQUEST).json({ error: "Region is required" });
+        SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Region is required" });
         return;
     }
     await MakeCallWithDatabaseResult(async () => await GetTeamsByRegion(qb, region), res, "GetTeamsByRegion:" + region);
@@ -23,12 +24,25 @@ router.get('/api/teamsByTournamentId', async (req: Request, res: Response) => {
     const tournamentId = req.query.tournamentId as string;
     
     if (!tournamentId) {
-        res.status(RESPONSE_BAD_REQUEST).json({ error: "Tournament is required" });
+        SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Tournament is required" });
         return;
     }
-    await MakeCallWithDatabaseResult(
-        async () => (await GetTeamsByTournamentId(qb, Number(tournamentId))).map(x => x.TeamId),
-        res, "GetTeamsByTournamentId:" + tournamentId);
+
+    try {
+        await qb.Connect();
+        const teamIds = (await GetTeamsByTournamentId(qb, Number(tournamentId))).map(x => x.TeamId);
+
+        const teams = await SelectTeamNameByIds(qb, teamIds);
+
+        const parsedTeams = TeamArraySchema.parse(teams);
+
+        SetResponse(res, RESPONSE_OK, parsedTeams);
+        qb.Disconnect();
+    }
+    catch (error) {
+        console.log(error);
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to select teams from database" });
+    }
 });
 
 export default router;

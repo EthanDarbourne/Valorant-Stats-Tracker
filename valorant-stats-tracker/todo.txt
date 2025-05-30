@@ -1,28 +1,37 @@
+AddGamePage:
 Pass two teams to round and clutch dialogs
 Have a selectable game number on AddGamePage depending on how often teams played each other in tournament
+Collect all data when saving map on AddGamePage
+Verify MapNumber selector works when changing games if a tournament is selected
 
-Use * in import
-Move home button to consist location (top right?)
-Extract button creating functionality to one place (function with options?)
-
-
-Collect all data when saving map
+AddTournamentsPage:
+Make home button visible on AddTournamentsPage
 
 
-Extract common features to separate files
+EditTournamentPage:
 
 
-Important:
-Option to not fill out placements when scheduling games
+
+EditTournamentResultsPage:
+Option to not fill out placements when scheduling games (done)
+Load games into edit placement page
 
 
-Later:
-Load from/Save to database
+HomePage:
+
 
 
 Backend:
-Transactions!!!
+Transactions!!! (done)
 Separate Helper.ts functions into proper files
 add validation to results from database (using zod)
-
 History of some tables for backups and reverting
+
+Database:
+Rename all Team1/Team2 to TeamA/TeamB
+
+Misc:
+Use * in import
+Move home button to consist location (top right?)
+Extract button creating functionality to one place (function with options?)
+Extract common features to separate files

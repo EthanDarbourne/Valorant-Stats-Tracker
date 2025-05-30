@@ -2,8 +2,6 @@ import { z } from "zod";
 import { makeColumnMap } from "./MakeCol";
 import { QueryBuilder } from "../QueryBuilder";
 import { SQLComparator } from "../Helpers";
-import pool from "../db";
-
 
 export const TournamentResultsTableSchema = z.object({
   TournamentId: z.number(),
