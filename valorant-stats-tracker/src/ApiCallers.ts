@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { MAPSROUTE, PORT, Regions, TEAMSBYREGIONROUTE, TEAMSBYTOURNAMENTROUTE, TOURNAMENTSROUTE, TOURNAMENTSBYIDROUTE, GAMESBYTOURNAMENTROUTE } from './Constants';
+import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentsByIdRoute, FetchGamesByTournamentIdRoute } from '../../shared/ApiRoutes';
 import { DefaultTournament, FixDates, Tournament, TournamentArraySchema, TournamentSchema } from "../../shared/TournamentSchema";
 import { GameArray, GameArraySchema } from "../../shared/GameSchema";
+import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
+import { PORT, Regions } from "./Constants";
 
 export function useMaps() {
     const [maps, setMaps] = useState<string[]>([]);
 
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${MAPSROUTE}`)
+        fetch(`http://localhost:${PORT}/${FetchMapsRoute}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch maps");
             return res.json();
@@ -23,18 +25,16 @@ export function useMaps() {
 }
 
 export function useTeamsByRegion(region: Regions) {
-    const [teams, setTeams] = useState<string[]>([]);
+    const [teams, setTeams] = useState<TeamArray>([]);
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${TEAMSBYREGIONROUTE}?region=${encodeURIComponent(Regions[region].toString())}`)
+        fetch(`http://localhost:${PORT}/${FetchTeamsByRegionRoute}?region=${encodeURIComponent(Regions[region].toString())}`)
         .then((res) => {
-            
             if (!res.ok) throw new Error("Failed to fetch teams by region");
             return res.json();
         })
         .then((data) => {
-            console.log("Fetched", data);
-            const teamNames = data.map((item: { Name: string }) => item.Name);
-            setTeams(teamNames);
+            const teamArray = TeamArraySchema.parse(data);
+            setTeams(teamArray);
         })
         .catch((err) => console.error(err))
     }, []);
@@ -47,7 +47,7 @@ export function useAllTeamsByRegions(regions: Regions[]) {
 
   // Populate each region’s teams using the useTeamsByRegion hook
   const allTeams = regions.reduce((acc, region) => {
-    const teams = useTeamsByRegion(region); // returns a list of strings (React state)
+    const teams = useTeamsByRegion(region).map(x => x.Name); // returns a list of strings (React state)
     acc[region] = teams;
     return acc;
   }, {} as Record<string, string[]>);
@@ -60,16 +60,16 @@ export function useAllTeamsByRegions(regions: Regions[]) {
 }
 
 export function useTeamsByTournamentId(tournamentId: number) {
-    const [teams, setTeams] = useState<string[]>([]);
+    const [teams, setTeams] = useState<TeamArray>([]);
 
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${TEAMSBYTOURNAMENTROUTE}?tournamentId=${encodeURIComponent(tournamentId)}`)
+        fetch(`http://localhost:${PORT}/${FetchTeamsByTournamentIdRoute}?TournamentId=${encodeURIComponent(tournamentId)}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch teams by tournament");
             return res.json();
         })
         .then((data) => {
-            const teams = data.map((item: { Name: string }) => item.Name);
+            const teams = TeamArraySchema.parse(data);
             setTeams(teams);
         })
         .catch((err) => console.error(err))
@@ -81,7 +81,7 @@ export function useTeamsByTournamentId(tournamentId: number) {
 export function useTournaments() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${TOURNAMENTSROUTE}`)
+        fetch(`http://localhost:${PORT}/${FetchAllTournamentsRoute}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch tournaments");
             return res.json();
@@ -105,7 +105,7 @@ export function useTournamentById(id: number) {
     const [tournament, setTournament] = useState<Tournament>(DefaultTournament);
 
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${TOURNAMENTSBYIDROUTE}?id=${encodeURIComponent(id.toString())}`)
+        fetch(`http://localhost:${PORT}/${FetchTournamentsByIdRoute}?TournamentId=${encodeURIComponent(id.toString())}`)
         .then((res) => {
             if (!res.ok) throw new Error(`Failed to fetch tournament with id ${id}`);
             return res.json();
@@ -128,7 +128,7 @@ export function useTournamentById(id: number) {
 export function useTournamentGamesById(tournamentId: number) {
     const [games, setGames] = useState<GameArray>([]);
     useEffect(() => {
-        fetch(`http://localhost:${PORT}/${GAMESBYTOURNAMENTROUTE}?tournamentId=${encodeURIComponent(tournamentId.toString())}`)
+        fetch(`http://localhost:${PORT}/${FetchGamesByTournamentIdRoute}?TournamentId=${encodeURIComponent(tournamentId.toString())}`)
         .then((res) => {
             if (!res.ok) throw new Error(`Failed to fetch tournament games with id ${tournamentId}`);
             return res.json();

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DeleteTournament, GetAllTournaments, GetTournamentById, InsertTournament, SetTournamentWinner, UpdateTournament } from '../TableSchemas/TournamentsTable';
 import { TeamInfo, TournamentSchema } from "../../../shared/TournamentSchema"
+import { DeleteTournamentRoute, FetchAllTournamentsRoute, FetchTournamentsByIdRoute, PostTournamentResultsRoute, PostTournamentRoute } from "../../../shared/ApiRoutes"
 import { TournamentResultArraySchema } from "../../../shared/TournamentResultsSchema";
 import { DeleteResultsForTournamentId, GetTeamsByTournamentId, InsertTournamentResult, UpdatePlacement } from '../TableSchemas/TournamentResultsTable';
 import { DeleteAllTournamentGames, InsertTournamentGames } from '../TableSchemas/TournamentGamesTable';
@@ -11,7 +12,7 @@ import { QueryBuilder } from '../QueryBuilder';
 
 const router = Router();
 
-router.get('/api/tournaments', async (req: Request, res: Response) => {
+router.get(FetchAllTournamentsRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     await qb.Connect();
     await qb.BeginTransaction();
@@ -20,15 +21,15 @@ router.get('/api/tournaments', async (req: Request, res: Response) => {
     qb.Disconnect();
 });
 
-router.get('/api/tournamentById', async (req: Request, res: Response) => {
+router.get(FetchTournamentsByIdRoute, async (req: Request, res: Response) => {
     try {
         const qb = new QueryBuilder(pool);
         await qb.Connect();
         await qb.BeginTransaction();
-        const id = Number(req.query.id as string);
-        const tournament = await GetTournamentById(qb, id);
+        const tournamentId = Number(req.query.TournamentId as string);
+        const tournament = await GetTournamentById(qb, tournamentId);
         
-        const teamsById = await GetTeamsByTournamentId(qb, id);
+        const teamsById = await GetTeamsByTournamentId(qb, tournamentId);
         
         const teamNames = await SelectTeamNameByIds(qb, teamsById.map(x => x.TeamId));
         const teams = teamsById.map(r => (
@@ -83,7 +84,7 @@ async function UpdateTournamentResults(qb: QueryBuilder, tournamentId: number, t
     console.log(`TournamentResults updated for TournamentId ${tournamentId}`);
 }
 
-router.post("/api/saveTournament", async (req: Request, res: Response) => {
+router.post(PostTournamentRoute, async (req: Request, res: Response) => {
   
     const qb = new QueryBuilder(pool);
     const parsed = TournamentSchema.safeParse(req.body);
@@ -120,7 +121,7 @@ function MapTeamNamesToIdsIfExist(names: string[], identities: TeamIdentity[]): 
     return ids.filter(id => id !== undefined).map(x => x.Id);
 }
 
-router.post("/api/saveTournamentResults", async (req: Request, res: Response) => {
+router.post(PostTournamentResultsRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     const parsed = TournamentResultArraySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -164,14 +165,14 @@ router.post("/api/saveTournamentResults", async (req: Request, res: Response) =>
     }
 });
 
-router.delete("/api/deleteTournament", async (req: Request, res: Response) => {
+router.delete(DeleteTournamentRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     
     // todo: remove reference to any games when saving VOD reviews
     try {
         await qb.Connect();
         await qb.BeginTransaction();
-        const tournamentId = Number(req.query.tournamentId as string);
+        const tournamentId = Number(req.query.TournamentId as string);
         await DeleteAllTournamentGames(qb, tournamentId);
         await DeleteResultsForTournamentId(qb, tournamentId);
         await DeleteTournament(qb, tournamentId);

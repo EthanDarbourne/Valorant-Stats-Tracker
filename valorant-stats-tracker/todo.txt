@@ -1,8 +1,9 @@
 AddGamePage:
 Pass two teams to round and clutch dialogs
-Have a selectable game number on AddGamePage depending on how often teams played each other in tournament
+Have a selectable game number on AddGamePage depending on how often teams played each other in tournament (done)
 Collect all data when saving map on AddGamePage
 Verify MapNumber selector works when changing games if a tournament is selected
+If using a game in database, display team player names to match agent to player name
 
 AddTournamentsPage:
 Make home button visible on AddTournamentsPage
@@ -16,6 +17,10 @@ EditTournamentResultsPage:
 Option to not fill out placements when scheduling games (done)
 Load games into edit placement page
 
+
+EditTeamPage:
+Fix backend routes to give full team object
+Add db tables for team
 
 HomePage:
 
@@ -35,3 +40,5 @@ Use * in import
 Move home button to consist location (top right?)
 Extract button creating functionality to one place (function with options?)
 Extract common features to separate files
+Fix route constant names and determine route schema (move routes to shared constants)
+Split ApiCallers and ApiPosters into files by datatype (like backend)

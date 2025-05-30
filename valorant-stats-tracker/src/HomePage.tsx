@@ -12,6 +12,7 @@ export default function HomePage() {
       <div className="flex space-x-4 mb-6">
         <Button onClick={() => navigate("/add-tournaments")}>Add Tournaments</Button>
         <Button onClick={() => navigate("/add-game")}>Add Game</Button>
+        <Button onClick={() => navigate("/edit-teams")}>Edit Teams</Button>
       </div>
 
       {games.length === 0 ? (

@@ -20,6 +20,7 @@ export const TournamentArraySchema = z.array(TournamentSchema);
 
 export type TeamInfo = z.infer<typeof TeamInfoSchema>;
 export type Tournament = z.infer<typeof TournamentSchema>;
+export type TournamentArray = z.infer<typeof TournamentArraySchema>;
 
 export function FixDates(data: any) {
   return ({...data,

@@ -5,11 +5,12 @@ import { SelectGamesByTournamentId } from "../TableSchemas/TournamentGamesTable"
 import { GetUnique, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from "../Helpers";
 import { SelectTeamNameByIds } from "../TableSchemas/TeamsTable";
 import { GameArray } from "../../../shared/GameSchema";
+import { FetchGamesByTournamentIdRoute } from "../../../shared/ApiRoutes";
 
 const router = Router();
 
 
-router.get('/api/gamesByTournamentId', async (req: Request, res: Response) => {
+router.get(FetchGamesByTournamentIdRoute, async (req: Request, res: Response) => {
     
     try {
 

@@ -5,12 +5,13 @@ import { GetTeamsByTournamentId } from '../TableSchemas/TournamentResultsTable';
 import { TeamArraySchema } from "../../../shared/TeamSchema";
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
+import { FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute } from '../../../shared/ApiRoutes';
 
 const router = Router();
 
-router.get('/api/teamsByRegion', async (req: Request, res: Response) => {
+router.get(FetchTeamsByRegionRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
-    const region = req.query.region as string;
+    const region = req.query.Region as string;
     
     if (!region) {
         SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Region is required" });
@@ -19,9 +20,9 @@ router.get('/api/teamsByRegion', async (req: Request, res: Response) => {
     await MakeCallWithDatabaseResult(async () => await GetTeamsByRegion(qb, region), res, "GetTeamsByRegion:" + region);
 });
 
-router.get('/api/teamsByTournamentId', async (req: Request, res: Response) => {
+router.get(FetchTeamsByTournamentIdRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
-    const tournamentId = req.query.tournamentId as string;
+    const tournamentId = req.query.TournamentId as string;
     
     if (!tournamentId) {
         SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Tournament is required" });

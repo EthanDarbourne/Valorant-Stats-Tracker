@@ -220,7 +220,7 @@ export default function AddGamePage() {
             className="w-1/3 border rounded-md p-2 bg-white"
         >
             <option key="" value="">Select Tournament</option>
-            {tournaments.map(t => [t.Id, t.Name]).map(t => (<option key={t[1]} value={t[0]}>{t[1]}</option>))}
+            {tournaments.map(t => [t.Id, t.Name]).map(t => (<option key={t[0]} value={t[0]}>{t[1]}</option>))}
         </select>
 
         {isGameInDatabase ?
@@ -231,7 +231,7 @@ export default function AddGamePage() {
                 className="w-1/3 border rounded-md p-2 bg-white"
                 >
                 <option key="" value="">Select Game</option>
-                {games.map(x => [x.Id, getFullGameName(x)]).map(t => (<option key={t[1]} value={t[0]}>{t[1]}</option>))}
+                {games.map(x => [x.Id, getFullGameName(x)]).map(t => (<option key={t[0]} value={t[0]}>{t[1]}</option>))}
             </select>) : (
             <input
                 name="game"
@@ -278,10 +278,10 @@ export default function AddGamePage() {
           >
             <option value="">Select Team A</option>
             {teams
-              .filter((team) => team !== formData.teamB)
+              .filter((team) => team.Name !== formData.teamB)
               .map((team) => (
-              <option key={team} value={team}>
-                {team}
+              <option key={team.Id} value={team.Name}>
+                {team.Name}
               </option>
             ))}
           </select>
@@ -308,10 +308,10 @@ export default function AddGamePage() {
             >
             <option value="">Select Team B</option>
             {teams
-              .filter((team) => team !== formData.teamA)
+              .filter((team) => team.Name !== formData.teamA)
               .map((team) => (
-                <option key={team} value={team}>
-                {team}
+                <option key={team.Id} value={team.Name}>
+                {team.Name}
               </option>
             ))}
           </select>

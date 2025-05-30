@@ -2,17 +2,6 @@
 
 export const PORT = 5000;
 
-
-
-export const MAPSROUTE = "api/maps"
-export const TOURNAMENTSROUTE = "api/tournaments"
-export const TOURNAMENTSBYIDROUTE = "api/tournamentById"
-export const TEAMSBYREGIONROUTE = "api/teamsByRegion"
-export const TEAMSBYTOURNAMENTROUTE = "api/teamsByTournamentId"
-export const GAMESBYTOURNAMENTROUTE = "api/gamesByTournamentId"
-export const SAVETOURNAMENTROUTE = "api/saveTournament"
-export const SAVETOURNAMENTRESULTSROUTE = "api/saveTournamentResults"
-
 export enum Regions {
     AMER,
     EMEA,
