@@ -1,3 +1,8 @@
+Current: ()
+
+
+
+
 AddGamePage:
 Pass two teams to round and clutch dialogs
 Have a selectable game number on AddGamePage depending on how often teams played each other in tournament (done)
@@ -19,11 +24,16 @@ Load games into edit placement page
 
 
 EditTeamPage:
-Fix backend routes to give full team object
-Add db tables for team
+Fix backend routes to give full team object (done)
+Add db tables for team (done)
+Give feedback on save
+
 
 HomePage:
 
+All Pages:
+Banner for failed requests with a retry option?
+Give feedback on button presses
 
 
 Backend:
@@ -31,6 +41,7 @@ Transactions!!! (done)
 Separate Helper.ts functions into proper files
 add validation to results from database (using zod)
 History of some tables for backups and reverting
+Remove TeamId from Players in Team Object
 
 Database:
 Rename all Team1/Team2 to TeamA/TeamB

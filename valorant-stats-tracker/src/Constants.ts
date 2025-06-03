@@ -3,10 +3,13 @@
 export const PORT = 5000;
 
 export enum Regions {
-    AMER,
-    EMEA,
-    APAC,
-    CN
+    AMER = "AMER",
+    EMEA = "EMEA",
+    APAC = "APAC",
+    CN = "CN"
 }
 
-export const RegionList = [Regions.AMER, Regions.EMEA, Regions.APAC, Regions.CN]
+export const RegionList = Object.values(Regions);
+
+export const roles = ['Duelist', 'Initiator', 'Smokes', 'Senti', 'Flex'];
+

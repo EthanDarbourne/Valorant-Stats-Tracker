@@ -32,6 +32,11 @@ export class QueryBuilder {
         return this;
     }
 
+    LogDebugInfo() {
+        console.debug("Current Query: " + this.toString());
+        console.debug("Current parameters: " + this.parameters);
+    }
+
     toString(): string {
         return this.str;
     }
@@ -143,6 +148,27 @@ export class QueryBuilder {
         this.append(" WHERE ");
         return this;
     }
+
+    OpenBracket() {
+        this.append("(");
+        return this;
+    }
+
+    CloseBracket() {
+        this.append(")");
+        return this;
+    }
+
+    WhereNull(col: ColumnIdentifier) {
+        this.append(`${Quote(col)} IS NULL`)
+        return this;
+    }
+
+    WhereNotNull(col: ColumnIdentifier) {
+        this.append(`${Quote(col)} IS NOT NULL`)
+        return this;
+    }
+
 
     WhereSingle(clause: WhereClause) {
         this.append(`${Quote(clause[0])} ${clause[1]} ${this.GetParameterString()}`);

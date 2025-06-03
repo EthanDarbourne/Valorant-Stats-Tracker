@@ -14,18 +14,22 @@ const router = Router();
 
 router.get(FetchAllTournamentsRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
-    await qb.Connect();
-    await qb.BeginTransaction();
-    await MakeCallWithDatabaseResult(async () => await GetAllTournaments(qb), res, "GetAllTournaments");
-    await qb.Commit();
-    qb.Disconnect();
+    try {
+        await qb.Connect();
+        await MakeCallWithDatabaseResult(async () => await GetAllTournaments(qb), res, "GetAllTournaments");
+    }
+    catch (error) {
+        SetResponse(res, RESPONSE_INTERNAL_ERROR);
+    }
+    finally {
+        qb.Disconnect();
+    }
 });
 
 router.get(FetchTournamentsByIdRoute, async (req: Request, res: Response) => {
+    const qb = new QueryBuilder(pool);
     try {
-        const qb = new QueryBuilder(pool);
         await qb.Connect();
-        await qb.BeginTransaction();
         const tournamentId = Number(req.query.TournamentId as string);
         const tournament = await GetTournamentById(qb, tournamentId);
         
@@ -44,13 +48,14 @@ router.get(FetchTournamentsByIdRoute, async (req: Request, res: Response) => {
             if (!parsed.success) {
                 throw new Error(`Validation failed: ${parsed.error.message}`);
         }
-        await qb.Commit();
-        qb.Disconnect();
         SetResponse(res, RESPONSE_OK, parsed.data);
     }
     catch (error) {
         console.log(error);
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { Error: "Error fetching from database by tournament Id " + req.query.id });
+    }
+    finally {
+        qb.Disconnect();
     }
 
 });
@@ -107,11 +112,14 @@ router.post(PostTournamentRoute, async (req: Request, res: Response) => {
         }
         await UpdateTournamentResults(qb, parsed.data.Id, parsed.data.Teams);
         await qb.Commit();
-        qb.Disconnect();
         SetResponse(res, RESPONSE_CREATED, { message: "Tournament created successfully" , Id: parsed.data.Id });
     } catch (error) {
         console.log(error);
+        await qb.Rollback();
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to insert tournament into database" });
+    }
+    finally {
+        qb.Disconnect();
     }
 });
 
@@ -157,11 +165,14 @@ router.post(PostTournamentResultsRoute, async (req: Request, res: Response) => {
             }
         }
         await qb.Commit();
-        qb.Disconnect();
         SetResponse(res, RESPONSE_CREATED, { message: "Tournament Results created successfully" , Id: parsed.data.TournamentId });
     } catch (error) {
         console.log(error);
+        await qb.Rollback();
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to insert tournament into database" });
+    }
+    finally {
+        qb.Disconnect();
     }
 });
 
@@ -177,12 +188,15 @@ router.delete(DeleteTournamentRoute, async (req: Request, res: Response) => {
         await DeleteResultsForTournamentId(qb, tournamentId);
         await DeleteTournament(qb, tournamentId);
         await qb.Commit();
-        qb.Disconnect();
         SetResponse(res, RESPONSE_OK, { message: "Tournament successfully deleted"});
     } catch (error) {
         console.log(error);
+        await qb.Rollback();
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to delete tournament from database" });
     } 
+    finally {
+        qb.Disconnect();
+    }
 });
 
 export default router;

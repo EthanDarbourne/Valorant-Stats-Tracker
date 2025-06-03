@@ -1,53 +1,110 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import HomeButton from './components/ui/HomeButton';
 import { useNavigate } from 'react-router-dom';
-import { useTeamsByRegion } from './ApiCallers';
-import { RegionList, Regions } from './Constants';
-
-const roles = ['Duelist', 'Flash', 'Scan', 'Senti', 'Flex'] as const;
+import { usePlayersWithoutTeams, useTeamsByRegion } from './ApiCallers';
+import { RegionList, Regions, roles } from './Constants';
+import { Team } from '../../shared/TeamSchema';
+import { updateTeam } from './ApiPosters';
+import AddPlayerWithoutTeamDialog from './components/ui/AddPlayerWithoutTeamDialog';
+import { getButtonClass } from './Utilities';
 
 type PlayerInput = {
-  name: string;
-  isIGL: boolean;
+    foundPlayer: boolean;
+    id: number;
+    name: string;
+    isIGL: boolean;
 };
 
-
-
 export default function TeamEditPage() {
-    const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+    const [selectedTeamId, setSelectedTeamId] = useState<number>(0);
     const [players, setPlayers] = useState<PlayerInput[]>(
-        roles.map(() => ({ name: '', isIGL: false }))
+        roles.map(() => ({ foundPlayer: false, id: -1, name: '', isIGL: false }))
     );
     const [region, setRegion] = useState<Regions>(Regions.AMER);
+    const [newRegion, setNewRegion] = useState<Regions>(Regions.AMER);
 
+    const [teams, fetchTeams] = useTeamsByRegion(region);
+    const allPlayers = useMemo(() => {
+        return teams.flatMap(team => team.Players);
+    }, [teams]);
 
-    const teams = useTeamsByRegion(region);
+    const [playersWithoutTeams, fetchPlayersWithoutTeams ]= usePlayersWithoutTeams();
+
+    const handleRegionChange = (region: Regions) => {
+        setRegion(region);
+        setSelectedTeamId(0);
+    }
 
     const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedTeamId(e.target.value);
+        const teamId = Number(e.target.value);
+        setSelectedTeamId(teamId);
         // Here you'd typically fetch team data to populate the form
-        setPlayers(roles.map(() => ({ name: '', isIGL: false })));
-        setRegion(Regions.AMER);
+        const teamPlayers = allPlayers.filter(x => x.TeamId == teamId);
+        setPlayers(roles.map(role => {
+            const player = teamPlayers.find(x => x.Role == role && x.TeamId == teamId);
+            return ({ foundPlayer: player != undefined, id: player?.Id ?? -1, name: player?.Name ?? "", isIGL: player?.IGL ?? false })
+        }));
+        setNewRegion(region);
     };
+
+    const findPlayer = (name: string) => {
+        const player = allPlayers.find(x => x.Name === name);
+        if (player !== undefined) return player;
+        return playersWithoutTeams.find(x => x.Name === name);
+    }
 
     const handlePlayerChange = (index: number, key: keyof PlayerInput, value: any) => {
         const updated = [...players];
         if (key === 'isIGL') {
             updated.forEach((_, i) => (updated[i].isIGL = i === index));
-        } else {
-            updated[index][key] = value;
+        } else if (key === 'name') {
+            const newName = value as string;
+            const match = findPlayer(newName);
+            if(match) {
+                updated[index]['id'] = match.Id;
+            }
+            updated[index]['foundPlayer'] = match !== undefined;
+            updated[index][key] = newName;
+        } else if (key === 'foundPlayer') {
+            updated[index][key] = false;
+            updated[index]['id'] = -1
+            updated[index]['name'] = ""
+            updated[index]['isIGL'] = false
         }
         setPlayers(updated);
     };
     const navigate = useNavigate();
 
-   const save = async () => {
-        //   tournament.Teams = teamSelections.flat().map(name => ({
-        //     Name: name,
-        //     Placement: null,
-        //   }));
-        //   await saveTeam(team);
-      }
+    useEffect(() => {
+        const updated = players.map(player => ({
+            ...player,
+            foundPlayer: true,
+            id: player.id < 0
+                ? findPlayer(player.name)?.Id ?? -1
+                : player.id
+        }));
+        setPlayers(updated);
+    }, [teams, allPlayers, playersWithoutTeams]);
+
+    const save = async () => {
+        const prevTeam = teams.find(x => x.Id == selectedTeamId)!;
+        const team: Team = ({
+            Id: selectedTeamId,
+            Name: prevTeam.Name,
+            Region: newRegion,
+            Players: players.map((x, roleIdx) => ({
+                Id: x.foundPlayer ? x.id : -1,
+                TeamId: selectedTeamId,
+                Name: x.name,
+                Role: roles[roleIdx],
+                IGL: x.isIGL,
+            })).filter(x => x.Name !== "")
+        });
+        await updateTeam(team)
+        
+        await fetchTeams();
+        await fetchPlayersWithoutTeams();
+    }
   
     const goBack = () => navigate("/add-tournaments");
 
@@ -64,9 +121,8 @@ export default function TeamEditPage() {
         <select
               className="block w-full border rounded p-2 mt-1"
               value={region}
-              onChange={(e) => setRegion(stringToRegion(e.target.value))}
+              onChange={(e) => {handleRegionChange(stringToRegion(e.target.value)); setNewRegion(stringToRegion(e.target.value))}}
             >
-              <option value="">-- Select Region --</option>
               {RegionList.map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -89,7 +145,7 @@ export default function TeamEditPage() {
         </select>
       </label>
 
-      {selectedTeamId && (
+      {selectedTeamId > 0 && (
         <>
           <div className="space-y-2">
             {roles.map((role, i) => (
@@ -100,6 +156,7 @@ export default function TeamEditPage() {
                   value={players[i].name}
                   onChange={(e) => handlePlayerChange(i, 'name', e.target.value)}
                   className="flex-1 border rounded p-1"
+                  tabIndex={i + 1}
                 />
                 <label className="flex items-center gap-1">
                   <input
@@ -109,18 +166,26 @@ export default function TeamEditPage() {
                   />
                   IGL
                 </label>
+                <button
+                    disabled={!players[i].foundPlayer}
+                    className="w-8 h-8 flex items-center justify-center text-xl font-bold text-gray-600 
+                                hover:text-white hover:bg-red-500 
+                                disabled:hover:bg-transparent disabled:hover:text-gray-400 
+                                rounded-full focus:outline-none"
+                    onClick={() => handlePlayerChange(i, 'foundPlayer', false)}>
+                    &times;
+                </button>
               </div>
             ))}
           </div>
 
           <label className="block mt-4">
-            Region:
+            New Region:
             <select
               className="block w-full border rounded p-2 mt-1"
-              value={region}
-              onChange={(e) => setRegion(stringToRegion(e.target.value))}
+              value={newRegion}
+              onChange={(e) => setNewRegion(stringToRegion(e.target.value))}
             >
-              <option value="">-- Select Region --</option>
               {RegionList.map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -130,13 +195,22 @@ export default function TeamEditPage() {
           </label>
         </>
       )}
-        <button onClick={_ => save()} className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                Save Changes
+        <div className="mt-6 flex items-center space-x-4">
+            {AddPlayerWithoutTeamDialog()}
+            <button onClick={_ => save()} 
+                className={"flex items-center gap-2 " + getButtonClass({
+                    bg: "bg-green-500", text: "text-white", hoverBg: "bg-green-600", rounded: true, padding: "px-4 py-2", transition: true
+                    })}>
+                Save
             </button>
-            <button onClick={_ => goBack()} className="mt-6 px-4 py-2 rounded">
+            <button onClick={_ => goBack()}
+                className={"flex items-center gap-2 " + getButtonClass({
+                    bg: "bg-white-500", text: "text-black", hoverBg: "bg-white-600", rounded: true, padding: "px-4 py-2", transition: true
+                    })}>
                 Go Back
             </button>
-        <HomeButton />
+            <HomeButton />
+        </div>
     </div>
   );
 }
