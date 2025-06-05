@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const TournamentResultSchema = z.object({
+    Id: z.number(),
     Name: z.string(),
     Placement: z.number().nullable(),
     Games: z.array(z.string().nullable())

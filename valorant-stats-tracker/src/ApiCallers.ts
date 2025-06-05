@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentsByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams } from '../../shared/ApiRoutes';
-import { DefaultTournament, FixDates, Tournament, TournamentArraySchema, TournamentSchema } from "../../shared/TournamentSchema";
+import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams } from '../../shared/ApiRoutes';
+import { DefaultTournament, FixDates, TournamentInfo, TournamentArraySchema, EntireTournament, EntireTournamentSchema } from "../../shared/TournamentSchema";
 import { GameArray, GameArraySchema } from "../../shared/GameSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
 import { PlayerArray, PlayerArraySchema } from "../../shared/PlayerSchema";
@@ -109,7 +109,7 @@ export function useTeamsByTournamentId(tournamentId: number) {
 }
 
 export function useTournaments() {
-    const [tournaments, setTournaments] = useState<Tournament[]>([]);
+    const [tournaments, setTournaments] = useState<TournamentInfo[]>([]);
     useEffect(() => {
         fetch(`http://localhost:${PORT}${FetchAllTournamentsRoute}`)
         .then((res) => {
@@ -132,16 +132,16 @@ export function useTournaments() {
 }
 
 export function useTournamentById(id: number) {
-    const [tournament, setTournament] = useState<Tournament>(DefaultTournament);
+    const [tournament, setTournament] = useState<EntireTournament>(DefaultTournament);
 
     useEffect(() => {
-        fetch(`http://localhost:${PORT}${FetchTournamentsByIdRoute}?TournamentId=${encodeURIComponent(id.toString())}`)
+        fetch(`http://localhost:${PORT}${FetchTournamentByIdRoute}?TournamentId=${encodeURIComponent(id.toString())}`)
         .then((res) => {
             if (!res.ok) throw new Error(`Failed to fetch tournament with id ${id}`);
             return res.json();
         })
         .then((data) => {
-            const result = TournamentSchema.safeParse(data);
+            const result = EntireTournamentSchema.safeParse(data);
             if (result.success) {
                 data = FixDates(result.data);
                 setTournament(data);

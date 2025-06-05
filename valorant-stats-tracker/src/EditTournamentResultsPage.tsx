@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  DndContext,
-  useDraggable,
-  useDroppable,
-  DragOverlay,
-  closestCenter,
+    DndContext,
+    useDraggable,
+    useDroppable,
+    DragOverlay,
+    closestCenter,
 } from "@dnd-kit/core";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTournamentById } from "./ApiCallers";
@@ -12,28 +12,29 @@ import { updateTournamentGamesAndPlacements } from "./ApiPosters";
 import HomeButton from './components/ui/HomeButton';
 
 interface TeamEntry {
-  index: number;
-  name: string;
-  placement: number;
-  games: (string | null)[];
+    index: number;
+    id: number;
+    name: string;
+    placement: number;
+    games: (string | null)[];
 }
 
 const DraggableOpponent = ({ id, children }: { id: string; children: React.ReactNode }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
-        opacity: isDragging ? 0.5 : 1,
-      }}
-      {...listeners}
-      {...attributes}
-      className="cursor-move border rounded px-1 bg-white"
-    >
-      {children}
-    </div>
-  );
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+    return (
+        <div
+        ref={setNodeRef}
+        style={{
+            transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
+            opacity: isDragging ? 0.5 : 1,
+        }}
+        {...listeners}
+        {...attributes}
+        className="cursor-move border rounded px-1 bg-white"
+        >
+        {children}
+        </div>
+    );
 };
 
 const DroppableCell = ({ id, children }: { id: string; onDrop: (id: string) => void; children?: React.ReactNode }) => {
@@ -69,10 +70,11 @@ const EditTournamentPlacements = () => {
 
     useEffect(() => {
         const teamData = tournament.Teams.map((team, index) => ({
-        index: index,
-        name: team.Name,
-        placement: team.Placement ?? 0,
-        games: Array(gameCount).fill(null),
+            index: index,
+            id: team.Id,
+            name: team.Name,
+            placement: team.Placement ?? 0,
+            games: team.Games.concat(Array(gameCount - team.Games.length).fill(null)),
         }));
         setTeams(teamData);
     }, [tournament.Teams]);
@@ -123,6 +125,7 @@ const EditTournamentPlacements = () => {
 
     const removeGameSlot = () => {
         if (gameCount <= 0) return;
+        if(teams.some(x => x.games.filter(y => y !== null).length >= gameCount))return;
         setTeams((prev) => prev.map((team) => ({ ...team, games: team.games.slice(0, -1) })));
         setGameCount((prev) => prev - 1);
     };
@@ -246,6 +249,7 @@ const EditTournamentPlacements = () => {
         await updateTournamentGamesAndPlacements({
             TournamentId: Number(id), 
             Results: teams.map((team) => ({
+                Id: team.id,
                 Name: team.name,
                 Placement: team.placement == 0 ? null : team.placement,
                 Games: team.games,

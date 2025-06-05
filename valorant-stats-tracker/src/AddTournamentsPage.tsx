@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { updateTournament } from "./ApiPosters";
-import { Tournament } from "../../shared/TournamentSchema";
+import { TournamentInfo } from "../../shared/TournamentSchema";
 import { useTournaments } from "./ApiCallers";
 import { toInputDateString } from "../../shared/Helpers";
 import HomeButton from './components/ui/HomeButton';
@@ -36,7 +36,7 @@ export default function TournamentsPage() {
 
   const handleChange = (
     id: number,
-    field: keyof Tournament,
+    field: keyof TournamentInfo,
     value: string | boolean
   ) => {
     setTournaments(
@@ -46,7 +46,7 @@ export default function TournamentsPage() {
     );
   };
 
-  const handleSaveTournament = async (t: Tournament) => {
+  const handleSaveTournament = async (t: TournamentInfo) => {
     console.log("Save tournament:", t);
     t.Id = await updateTournament(t);
     console.log("Saved tournament with id:" + t.Id);

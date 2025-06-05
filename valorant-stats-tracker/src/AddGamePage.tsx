@@ -8,7 +8,7 @@ import { useGameContext } from "@/GameContext";
 import { useMaps, useTeamsByTournamentId, useTournamentGamesById, useTournaments } from "./ApiCallers"
 import HomeButton from "./components/ui/HomeButton";
 import { Game } from "../../shared/GameSchema";
-import { DefaultTournament, Tournament } from "../../shared/TournamentSchema";
+import { DefaultTournament, TournamentInfo } from "../../shared/TournamentSchema";
 
 const duelists = ["Jett", "Neon", "Yoru", "Raze", "Phoenix", "Reyna", "Waylay", "Iso"];
 const initiators = ["Breach", "Sova", "Skye", "Tejo", "KAYO", "Fade", "Gekko"];
@@ -43,7 +43,7 @@ export default function AddGamePage() {
   const [teamAAgents, setTeamAAgents] = useState<string[]>(Array(5).fill(""));
   const [teamBAgents, setTeamBAgents] = useState<string[]>(Array(5).fill(""));
 
-  const [tournament, setTournament] = useState<Tournament>(DefaultTournament);
+  const [tournament, setTournament] = useState<TournamentInfo>(DefaultTournament);
   
   const maps = useMaps();
   const [isGameInDatabase, setGameInDatabase] = useState<boolean>(false);

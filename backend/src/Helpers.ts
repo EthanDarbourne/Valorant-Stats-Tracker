@@ -1,4 +1,5 @@
 import { Response } from "express";
+import { TeamIdentity } from "./TableSchemas/TeamsTable";
 
 
 
@@ -130,3 +131,28 @@ export const SQLJoinType = {
 } as const;
 
 export type SQLJoinType = (typeof SQLJoinType)[keyof typeof SQLJoinType];
+
+/**
+ * Throws an error if the provided value is null or undefined.
+ */
+export function requireValue<T>(value: T | undefined | null, message: string): T {
+    if (value == null) {
+        throw new Error(message);
+    }
+    return value;
+}
+
+/**
+ * Finds an item in an array and throws if not found.
+ */
+export function maybeFind<T>(
+    array: T[],
+    predicate: (value: T, index: number, obj: T[]) => boolean,
+    message: string
+): T {
+    return requireValue(array.find(predicate), message);
+}
+
+export function FindTeamName(teamId: number, identities: TeamIdentity[]) {
+    return identities.find(x => x.Id == teamId)?.Name;
+}

@@ -1,4 +1,5 @@
-Current: ()
+Current:
+Adding team id to Tournament schemas and creating object representing entire tournament object.
 
 
 
@@ -27,9 +28,13 @@ EditTeamPage:
 Fix backend routes to give full team object (done)
 Add db tables for team (done)
 Give feedback on save
+Maybe roles should be selectable for teams with weird roles or add roles (secondary duelist, viper, secondary init etc)
 
 
 HomePage:
+Add fun info like upcoming/recent games previews
+stats on total data collected
+
 
 All Pages:
 Banner for failed requests with a retry option?
@@ -42,6 +47,8 @@ Separate Helper.ts functions into proper files
 add validation to results from database (using zod)
 History of some tables for backups and reverting
 Remove TeamId from Players in Team Object
+Make sure all functions on a table specify return type
+Figure out a way for strict typing the QueryBuilder.AddValues function (generic + Object.values() ???)
 
 Database:
 Rename all Team1/Team2 to TeamA/TeamB

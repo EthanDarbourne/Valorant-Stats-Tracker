@@ -1,19 +1,19 @@
 import { PORT } from "./Constants";
-import { Tournament, TournamentSchema } from "../../shared/TournamentSchema";
+import { TournamentInfo, TournamentInfoSchema } from "../../shared/TournamentSchema";
 import { TournamentResultArray } from "../../shared/TournamentResultsSchema";
-import { PostPlayerRoute, PostTeamRoute, PostTournamentResultsRoute, PostTournamentRoute } from "../../shared/ApiRoutes";
+import { PostPlayerRoute, PostTeamRoute, PostTournamentResultsRoute, PostTournamentInfoRoute } from "../../shared/ApiRoutes";
 import { Team } from "../../shared/TeamSchema";
 import { Player } from "../../shared/PlayerSchema";
 
-export async function updateTournament(tournament: Tournament) {
+export async function updateTournament(tournament: TournamentInfo) {
   // Validate the tournament object
-  const parsed = TournamentSchema.safeParse(tournament);
+  const parsed = TournamentInfoSchema.safeParse(tournament);
   if (!parsed.success) {
     console.error("Invalid tournament object:", parsed.error);
     throw new Error("Invalid tournament data");
   }
   console.log("Sending ", parsed.data)
-  const response = await fetch(`http://localhost:${PORT}${PostTournamentRoute}`, {
+  const response = await fetch(`http://localhost:${PORT}${PostTournamentInfoRoute}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

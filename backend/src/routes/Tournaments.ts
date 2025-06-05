@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { DeleteTournament, GetAllTournaments, GetTournamentById, InsertTournament, SetTournamentWinner, UpdateTournament } from '../TableSchemas/TournamentsTable';
-import { TeamInfo, TournamentSchema } from "../../../shared/TournamentSchema"
-import { DeleteTournamentRoute, FetchAllTournamentsRoute, FetchTournamentsByIdRoute, PostTournamentResultsRoute, PostTournamentRoute } from "../../../shared/ApiRoutes"
+import { EntireTournamentSchema, TeamInfo, TournamentInfoSchema } from "../../../shared/TournamentSchema"
+import { DeleteTournamentRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, PostTournamentResultsRoute, PostTournamentInfoRoute } from "../../../shared/ApiRoutes"
 import { TournamentResultArraySchema } from "../../../shared/TournamentResultsSchema";
 import { DeleteResultsForTournamentId, GetTeamsByTournamentId, InsertTournamentResult, UpdatePlacement } from '../TableSchemas/TournamentResultsTable';
-import { DeleteAllTournamentGames, InsertTournamentGames } from '../TableSchemas/TournamentGamesTable';
+import { DeleteAllTournamentGames, GameInfo, InsertTournamentGames, SelectGamesByTournamentId } from '../TableSchemas/TournamentGamesTable';
 import { SelectTeamIdsByName, SelectTeamNameByIds, TeamIdentity } from '../TableSchemas/TeamsTable';
-import { MakeCallWithDatabaseResult, RESPONSE_OK, RESPONSE_INTERNAL_ERROR, SetResponse, RESPONSE_CREATED, RESPONSE_BAD_REQUEST } from '../Helpers';
+import { MakeCallWithDatabaseResult, RESPONSE_OK, RESPONSE_INTERNAL_ERROR, SetResponse, RESPONSE_CREATED, RESPONSE_BAD_REQUEST, FindTeamName } from '../Helpers';
 import pool from '../db';
 import { QueryBuilder } from '../QueryBuilder';
 
@@ -26,7 +26,7 @@ router.get(FetchAllTournamentsRoute, async (req: Request, res: Response) => {
     }
 });
 
-router.get(FetchTournamentsByIdRoute, async (req: Request, res: Response) => {
+router.get(FetchTournamentByIdRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     try {
         await qb.Connect();
@@ -36,17 +36,30 @@ router.get(FetchTournamentsByIdRoute, async (req: Request, res: Response) => {
         const teamsById = await GetTeamsByTournamentId(qb, tournamentId);
         
         const teamNames = await SelectTeamNameByIds(qb, teamsById.map(x => x.TeamId));
+        const tournamentGames = await SelectGamesByTournamentId(qb, tournamentId);
+
         const teams = teamsById.map(r => (
-            { Name: teamNames.find(x => x.Id == r.TeamId)?.Name, Placement: r.Placement }));
+            { 
+                Id: r.TeamId,
+                Name: teamNames.find(x => x.Id == r.TeamId)?.Name,
+                Placement: r.Placement,
+                Games: tournamentGames.filter(x => x.Team1Id == r.TeamId || x.Team2Id == r.TeamId)
+                    .map(x => x.Team1Id !== r.TeamId 
+                            ? FindTeamName(x.Team1Id, teamNames) 
+                            : FindTeamName(x.Team2Id, teamNames)).map(x => x ? x : null)
+                        }))
             // todo: log if didn't find id
-            const fullTournament = {
-                ...tournament,
-                Teams: teams,
-            };
-            
-            const parsed = TournamentSchema.safeParse(fullTournament);
-            if (!parsed.success) {
-                throw new Error(`Validation failed: ${parsed.error.message}`);
+        if(teams.some(x => x.Name == undefined)) {
+            console.error("Some of the teams didn't find their name");
+        }
+        const fullTournament = {
+            ...tournament,
+            Teams: teams,
+        };
+        
+        const parsed = EntireTournamentSchema.safeParse(fullTournament);
+        if (!parsed.success) {
+            throw new Error(`Validation failed: ${parsed.error.message}`);
         }
         SetResponse(res, RESPONSE_OK, parsed.data);
     }
@@ -76,9 +89,9 @@ async function UpdateTournamentResults(qb: QueryBuilder, tournamentId: number, t
         const teamId = teams.find(x => x.Name == team.Name)?.Id;
         if(teamId) {
             await InsertTournamentResult(qb, {
-            TournamentId: tournamentId,
-            TeamId: teamId,
-            Placement: team.Placement
+                TournamentId: tournamentId,
+                TeamId: teamId,
+                Placement: team.Placement
             });
         }
         else {
@@ -89,10 +102,10 @@ async function UpdateTournamentResults(qb: QueryBuilder, tournamentId: number, t
     console.log(`TournamentResults updated for TournamentId ${tournamentId}`);
 }
 
-router.post(PostTournamentRoute, async (req: Request, res: Response) => {
+router.post(PostTournamentInfoRoute, async (req: Request, res: Response) => {
   
     const qb = new QueryBuilder(pool);
-    const parsed = TournamentSchema.safeParse(req.body);
+    const parsed = TournamentInfoSchema.safeParse(req.body);
     if (!parsed.success) {
         SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Invalid tournament data", details: parsed.error.errors });
         return;
@@ -126,7 +139,8 @@ router.post(PostTournamentRoute, async (req: Request, res: Response) => {
 // we assume that any missing ids are for games that are already handled
 function MapTeamNamesToIdsIfExist(names: string[], identities: TeamIdentity[]): number[] {
     const ids = names.map(name => identities.find(y => y.Name == name));
-    return ids.filter(id => id !== undefined).map(x => x.Id);
+    if(ids.some(x => x === undefined)) throw new Error("Couldn't find id for some teams");
+    return ids.filter(x => x !== undefined).map(x => x?.Id);
 }
 
 router.post(PostTournamentResultsRoute, async (req: Request, res: Response) => {
@@ -145,6 +159,31 @@ router.post(PostTournamentResultsRoute, async (req: Request, res: Response) => {
         const teamNames = results.map(x => x.Name)
         let teams = await SelectTeamIdsByName(qb, teamNames);
         
+        let completedTeams: number[] = [];
+
+        const FindGameNumber = (teamId: number, opponentId: number, matchNumber: number) => {
+            const result = results.find(x => x.Id == teamId);
+            if (result == undefined) throw new Error("Couldn't find team with id: " + teamId);
+            const opponentName = teams.find(x => x.Id == opponentId)?.Name;
+            if (opponentName == undefined) throw new Error("Couldn't find team with id: " + opponentId);
+            for(let i = 0; i < result.Games.length; ++i) {
+                if(result.Games[i] == opponentName) {
+                    if (matchNumber > 1)--matchNumber;
+                    else return i + 1
+                }
+            }
+            throw new Error(`Couldn't find matchup ${matchNumber} of ${teamId} and ${opponentId}`);
+        }
+
+        const FindGameNumbers = (teamId: number, opponentIds: number[]) => {
+            const matchNumbers: Record<number, number> = {};
+            return opponentIds.map(id => {
+                const cur = matchNumbers[id] ? matchNumbers[id] : 1;
+                const ret = FindGameNumber(id, teamId, cur);
+                matchNumbers[id] = cur + 1;
+                return [ret, cur];
+            });
+        }
         // Remove all games for tournament id
         await DeleteAllTournamentGames(qb, tournamentId);
 
@@ -156,9 +195,22 @@ router.post(PostTournamentResultsRoute, async (req: Request, res: Response) => {
                 if(res.Placement == 1) {
                     await SetTournamentWinner(qb, tournamentId, id);
                 }
+                // list of opponent ids
+                // for each opponent, find out which game number it is playing this team.
+                // if opponentid is in completedteams filter out
                 const opponentIds = MapTeamNamesToIdsIfExist(res.Games.filter(x => x != null), teams);
-                await InsertTournamentGames(qb, tournamentId, id, opponentIds);
-                teams = teams.filter(x => x.Id !== id);
+                const opponentGameNumbers = FindGameNumbers(id, opponentIds);
+
+                const games: GameInfo[] = opponentIds.map((opponentId, index) => ({
+                    TeamId: id,
+                    TeamGameNumber: index + 1,
+                    OpponentId: opponentId,
+                    OpponentGameNumber: opponentGameNumbers[index][0],
+                    MatchNumber: opponentGameNumbers[index][1]
+                })).filter(game => !completedTeams.includes(game.OpponentId));
+
+                await InsertTournamentGames(qb, tournamentId, games);
+                completedTeams.push(id);
             }
             else {
                 console.log("Couldn't find id for team " + res.Name);
