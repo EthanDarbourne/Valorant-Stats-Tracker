@@ -1,6 +1,4 @@
 Current:
-Adding team id to Tournament schemas and creating object representing entire tournament object.
-
 
 
 
@@ -9,7 +7,17 @@ Pass two teams to round and clutch dialogs
 Have a selectable game number on AddGamePage depending on how often teams played each other in tournament (done)
 Collect all data when saving map on AddGamePage
 Verify MapNumber selector works when changing games if a tournament is selected
-If using a game in database, display team player names to match agent to player name
+If using a game in database, display team player names to match agent to player name (done)
+Sort agents by putting preferred role of player at top (todo: set preferred agent comp for a map, or preferred agent comp of a team)
+
+Add button for which team is defending first 
+Add inputs for scores of players, one for first half, one for second half.
+Fix AddGame in GameContext
+Later:
+Button for who picked map
+Help dialog for shortcuts
+Add formData verification and more errors (Stats etc.)
+
 
 AddTournamentsPage:
 Make home button visible on AddTournamentsPage
@@ -21,7 +29,7 @@ EditTournamentPage:
 
 EditTournamentResultsPage:
 Option to not fill out placements when scheduling games (done)
-Load games into edit placement page
+Load games into edit placement page (done)
 
 
 EditTeamPage:
@@ -49,6 +57,9 @@ History of some tables for backups and reverting
 Remove TeamId from Players in Team Object
 Make sure all functions on a table specify return type
 Figure out a way for strict typing the QueryBuilder.AddValues function (generic + Object.values() ???)
+Wrapper for all api routes that provides a querybuilder to a function and does all try/catch/finally and setresponse on error
+Use extractValuesInSchemaOrder where needed
+
 
 Database:
 Rename all Team1/Team2 to TeamA/TeamB
@@ -60,3 +71,5 @@ Extract button creating functionality to one place (function with options?)
 Extract common features to separate files
 Fix route constant names and determine route schema (move routes to shared constants)
 Split ApiCallers and ApiPosters into files by datatype (like backend)
+Better naming for different types of games (tournament vs not tournament)
+Check naming convention ApiCallers and ApiPosters function names (also split into better files)

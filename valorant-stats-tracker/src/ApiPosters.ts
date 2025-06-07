@@ -1,7 +1,8 @@
 import { PORT } from "./Constants";
 import { TournamentInfo, TournamentInfoSchema } from "../../shared/TournamentSchema";
 import { TournamentResultArray } from "../../shared/TournamentResultsSchema";
-import { PostPlayerRoute, PostTeamRoute, PostTournamentResultsRoute, PostTournamentInfoRoute } from "../../shared/ApiRoutes";
+import { OtherMap, TournamentMap } from "../../shared/EntireGameSchema";
+import { PostPlayerRoute, PostTeamRoute, PostTournamentResultsRoute, PostTournamentInfoRoute, PostTournamentMap, PostOtherMap } from "../../shared/ApiRoutes";
 import { Team } from "../../shared/TeamSchema";
 import { Player } from "../../shared/PlayerSchema";
 
@@ -75,6 +76,40 @@ export async function updatePlayer(player: Player) {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to post player: ${response.status} ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+export async function updateTournamentGame(game: TournamentMap) {
+    const response = await fetch(`http://localhost:${PORT}${PostTournamentMap}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(game),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to post tournament game: ${response.status} ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+export async function updateOtherGame(game: OtherMap) {
+    const response = await fetch(`http://localhost:${PORT}${PostOtherMap}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(game),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to post other game: ${response.status} ${errorText}`);
   }
 
   return await response.json();

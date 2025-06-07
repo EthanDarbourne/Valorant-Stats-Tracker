@@ -5,6 +5,7 @@ import teamsRouter from './routes/Teams';
 import tournamentsRouter from './routes/Tournaments';
 import gamesRouter from './routes/Games';
 import playersRouter from './routes/Players';
+import agentsRouter from './routes/Agents';
 
 const app = express();
 app.use(cors());
@@ -15,6 +16,7 @@ app.use('/', teamsRouter);
 app.use('/', tournamentsRouter);
 app.use('/', gamesRouter);
 app.use('/', playersRouter);
+app.use('/', agentsRouter);
 
 app.use((req, res) => {
   res.status(404).send(`Route not found: ${req.method} ${req.originalUrl}`);

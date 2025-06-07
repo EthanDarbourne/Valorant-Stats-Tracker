@@ -78,3 +78,14 @@ export async function InsertTournamentGames(qb: QueryBuilder, tournamentId: numb
 
     await qb.Execute();
 }
+
+export async function UpdateTournamentGame(qb: QueryBuilder, tournamentGame: TournamentGameRow) {
+
+    const { Id, ...withoutId } = tournamentGame;
+    qb.Update(TournamentGameTableName)
+        .Set(Object.entries(withoutId))
+        .WhereClause()
+        .WhereSingle([TournamentGameColumns.Id, SQLComparator.EQUAL, tournamentGame.Id]);
+
+    await qb.Execute();
+}

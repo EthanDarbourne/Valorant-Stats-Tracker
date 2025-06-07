@@ -14,7 +14,7 @@ import {
   import { CSS } from "@dnd-kit/utilities";
   import { Button } from "@/components/ui/button";
   import ClutchItem from "./ClutchItem";
-  import { useState } from "react";
+  import { useEffect, useState } from "react";
   import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
   
   // List of available options
@@ -27,6 +27,8 @@ import {
   type DragAndDropListProps = {
     allowDuplicates: boolean;
     hasClutchItem: boolean;
+    onChange: (ordered: string[]) => void;
+    startingValues?: string[];
   };
 
   type MidRoundItemProps = {
@@ -38,11 +40,17 @@ import {
     return items.find(x => x[1] == key) !== undefined
   }
 
-  export default function DragAndDropList({ allowDuplicates, hasClutchItem }: DragAndDropListProps) {
+  export default function DragAndDropList({ allowDuplicates, hasClutchItem, onChange, startingValues = [] }: DragAndDropListProps) {
     const [selectedItems, setSelectedItems] = useState<[string,string][]>([]);
     const [hasClutch, setClutch] = useState<boolean>(false);
   
     const sensors = useSensors(useSensor(PointerSensor));
+
+    useEffect(() => {
+        const orderedEvents = selectedItems.map(([_, name]) => name);
+        onChange(orderedEvents);
+    }, [selectedItems]);
+
   
     const handleDragEnd = (event: any) => {
       const { active, over } = event;
@@ -56,9 +64,11 @@ import {
   
     const addItem = (item: string) => {
       if (allowDuplicates || selectedItems.find(x => x[1] == item) === undefined) {
-        setSelectedItems([...selectedItems, [item + `-${counter++}`, item]]);
+        setSelectedItems(prev => [...prev, [item + `-${counter++}`, item]]);
       }
     };
+    useEffect(() => startingValues.forEach(x => addItem(x)), [startingValues])
+    
 
     const removeItem = (item: string) => {
       setSelectedItems(selectedItems.filter((i) => i[0] !== item));

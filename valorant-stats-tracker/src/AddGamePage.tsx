@@ -5,16 +5,33 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import DragAndDropList from "@/components/ui/DragDropList"
 import { useGameContext } from "@/GameContext";
-import { useMaps, useTeamsByTournamentId, useTournamentGamesById, useTournaments } from "./ApiCallers"
+import { useAgents, useMaps, useTeamsByTournamentId, useTournamentGamesById, useTournaments } from "./ApiCallers"
 import HomeButton from "./components/ui/HomeButton";
 import { Game } from "../../shared/GameSchema";
 import { DefaultTournament, TournamentInfo } from "../../shared/TournamentSchema";
+import { OtherMap, PlayerStats, RoundInfo, StatLine, TournamentMap } from "../../shared/EntireGameSchema";
+import { roles } from "./Constants";
+import { updateOtherGame, updateTournamentGame } from "./ApiPosters";
 
-const duelists = ["Jett", "Neon", "Yoru", "Raze", "Phoenix", "Reyna", "Waylay", "Iso"];
-const initiators = ["Breach", "Sova", "Skye", "Tejo", "KAYO", "Fade", "Gekko"];
-const controllers = ["Astra", "Brimstone", "Omen", "Viper", "Harbor", "Clove"]
-const sentinels = ["Cypher", "Killjoy", "Vyse", "Sage", "Chamber", "Deadlock"]
-const agents = [...duelists, ...initiators, ...controllers, ...sentinels];
+// Information To Submit
+// two submits:
+// SubmitGameInDatabase:
+// GameId: number,
+// Date: string
+// TeamIdDefendingFirst: number,
+// Players: [TeamId: , PlayerId:, FirstHalfStats: , TotalStats: , Agent: ,] // todo: Clutches, FB, FD, 2K,3K,4K,5K
+// Rounds: [Winner: , Notes: , Events: ]
+
+// calculated on backend:
+// score
+
+// SubmitNewGame:
+// GameName:
+// Date: string
+// TeamIdDefendingFirst: number,
+// IsPlayer, is the player that is submitting the game playing this agent, assume first agent is player
+// Players: [IsPlayer:bool, FirstHalfStats: , TotalStats: , Agent: ,] // todo: Clutches, FB, FD, 2K,3K,4K,5K
+// Rounds: [Winner: , Notes: , Events: ]
 
 export default function AddGamePage() {
   const [formData, setFormData] = useState({
@@ -23,8 +40,10 @@ export default function AddGamePage() {
     game: "",
     mapCount: 3,
     mapNumber: 1,
-    teamA: "",
-    teamB: "",
+    teamAId: -1,
+    teamAName: "",
+    teamBId: -1,
+    teamBName: "",
     map: "",
     date: "",
     score: "",
@@ -36,12 +55,25 @@ export default function AddGamePage() {
 
   // Error state for multiple errors
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [roundDetails, setRoundDetails] = useState(Array(24).fill({ winner: "", notes: "" }));
+  const [game, setGame] = useState<Game | undefined>();
+  const [roundDetails, setRoundDetails] = useState<RoundInfo[]>(Array.from({ length: 24 }, (_, index) => ({
+        GameId: game?.Id ?? -1,
+        RoundNumber: index + 1,
+        RoundWinnerId: -1,
+        Notes: "",
+        Events: []
+    })));
   const [activeRound, setActiveRound] = useState<number | null>(null);
-  const [dialogInput, setDialogInput] = useState({ winner: "", notes: "" });
+  const [dialogInput, setDialogInput] = useState<RoundInfo>({ GameId: -1, RoundNumber: -1, RoundWinnerId: -1, Notes: "", Events: [] });
+  const [startingEvents, setStartingEvents] = useState<string[]>([]);
+  const agents = useAgents();
   
   const [teamAAgents, setTeamAAgents] = useState<string[]>(Array(5).fill(""));
   const [teamBAgents, setTeamBAgents] = useState<string[]>(Array(5).fill(""));
+  const [teamAFirstHalfStats, setTeamAFirstHalfStats] = useState<string[]>(Array(5).fill(""));
+  const [teamATotalStats, setTeamATotalStats] = useState<string[]>(Array(5).fill(""));
+  const [teamBFirstHalfStats, setTeamBFirstHalfStats] = useState<string[]>(Array(5).fill(""));
+  const [teamBTotalStats, setTeamBTotalStats] = useState<string[]>(Array(5).fill(""));
 
   const [tournament, setTournament] = useState<TournamentInfo>(DefaultTournament);
   
@@ -56,6 +88,9 @@ export default function AddGamePage() {
   
   const [games, _setGames] = useTournamentGamesById(tournament.Id);
 
+
+  const defendingFirst = true;
+
   const handleTournamentChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setTournament(tournaments.find(x => x.Id == Number(e.target.value)) ?? DefaultTournament);
     if(e.target.value == "") formData.game = "";
@@ -66,8 +101,11 @@ export default function AddGamePage() {
   const handleGameChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const game = games.find(x => x.Id == Number(e.target.value))
     formData.mapCount = game?.MapCount ?? 1
-    formData.teamA = game?.TeamNameA ?? ""
-    formData.teamB = game?.TeamNameB ?? ""
+    formData.teamAName = game?.TeamNameA ?? ""
+    formData.teamBName = game?.TeamNameB ?? ""
+    formData.teamAId = teams.find(x => x.Name == formData.teamAName)?.Id ?? -1
+    formData.teamBId = teams.find(x => x.Name == formData.teamBName)?.Id ?? -1
+    setGame(game);
     handleChange(e);
   };
 
@@ -93,11 +131,11 @@ export default function AddGamePage() {
     let formErrors: { [key: string]: string } = {};
 
     var canCountRounds = true;
-    if (formData.teamA === "") {
+    if (formData.teamAName === "") {
       formErrors.selectTeams = "Must select team A";
       canCountRounds = false;
     }
-    else if(formData.teamB === "") {
+    else if(formData.teamBName === "") {
       formErrors.selectTeams = "Must select team B";
       canCountRounds = false;
     }
@@ -112,11 +150,11 @@ export default function AddGamePage() {
       
       var isPreviousRoundMissingWinner = false;
       roundDetails.forEach((round, _) => {
-      if(isPreviousRoundMissingWinner && round.winner != "") {
+      if(isPreviousRoundMissingWinner && round.RoundWinnerId != -1) {
           formErrors.missingRoundWinner = "Skipped a round winner, please fill in"
         }
-        if(round.winner == formData.teamA) ++teamARounds;
-        else if(round.winner == formData.teamB) ++teamBRounds;
+        if(round.RoundWinnerId == formData.teamAId) ++teamARounds;
+        else if(round.RoundWinnerId == formData.teamBId) ++teamBRounds;
         else isPreviousRoundMissingWinner = true;
       });
   
@@ -141,12 +179,70 @@ export default function AddGamePage() {
       return; // Don't submit if there are errors
     }
 
-    addGame(formData);
+    const parseStat = (stat: string): StatLine => {
+        const split = stat.split('/');
+        return {
+            Kills: Number(split[0]), Deaths: Number(split[1]), Assists: Number(split[2]),
+        }
+    }
+
+    const getPlayerId = (teamName: string, index: number) => {
+        const players = teams.find(x => x.Name == teamName)?.Players;
+        const playerName = GetPlayerNameRow(teamName)[index];
+        const ret = players?.find(x => x.Name == playerName)?.Id;
+        if(ret === undefined) {
+            throw new Error(`Can't find player ${playerName} at ${index} for team ${teamName} with players ${players}`)
+        }
+        return ret;
+    }
+
+    const playerAStats: PlayerStats[] = Array.from({ length: 5 }, (_, i) => i).map(i => ({
+        TeamId: formData.teamAId,
+        Agent: teamAAgents[i],
+        PlayerId: getPlayerId(formData.teamAName, i),
+        FirstHalfStats: parseStat(teamAFirstHalfStats[i]),
+        TotalStats: parseStat(teamATotalStats[i])
+    }));
+
+    const playerBStats: PlayerStats[] = Array.from({ length: 5 }, (_, i) => i).map(i => ({
+        TeamId: formData.teamBId,
+        Agent: teamBAgents[i],
+        PlayerId: getPlayerId(formData.teamBName, i),
+        FirstHalfStats: parseStat(teamBFirstHalfStats[i]),
+        TotalStats: parseStat(teamBTotalStats[i])
+    }));
+
+    if(isGameInDatabase) {
+        // submit 
+        if(game === undefined) {
+            throw new Error("Game is undefined");
+        }
+        const tournamentGame: TournamentMap = {
+            TournamentId: tournament.Id,
+            GameId: game.Id,
+            TeamA: { TeamId: formData.teamAId, DefendingFirst: defendingFirst, Players: playerAStats },
+            TeamB: { TeamId: formData.teamBId, DefendingFirst: !defendingFirst, Players: playerBStats },
+            MapNumber: formData.mapNumber,
+            MapName: formData.map,
+            Date: formData.date,
+            Rounds: roundDetails
+        }
+
+        updateTournamentGame(tournamentGame);
+    }
+    else {
+
+        const otherGame: OtherMap = {};
+        updateOtherGame(otherGame);
+    }
+
+    //addGame(formData);
     navigate("/");
   };
 
   const openRoundDialog = (index: number) => {
     setActiveRound(index);
+    setStartingEvents(roundDetails[index].Events);
     setDialogInput(roundDetails[index]);
   };
 
@@ -159,32 +255,47 @@ export default function AddGamePage() {
     }
   };
 
+  const saveEvents = (events: string[]) => {
+    if (activeRound === null)return;
+    const updatedRounds = [...roundDetails];
+    updatedRounds[activeRound].Events = events;
+    setRoundDetails(updatedRounds);
+  }
+
   const renderAgentDropdowns = (
     selectedAgents: string[],
     team: "A" | "B"
   ) => {
-    return selectedAgents.map((selected, index) => {
+    return (<div className="flex gap-2">
+        {selectedAgents.map((selected, index) => {
       const availableAgents = agents.filter(
         (a) => !selectedAgents.includes(a) || a === selected
       );
   
       return (
         <select
-          key={index}
-          value={selected}
-          onChange={(e) => handleAgentChange(team, index, e.target.value)}
-          className="p-2 border rounded w-1/5 text-black mb-2"
+        key={team + '-' + index}
+        value={selected}
+        onChange={(e) => handleAgentChange(team, index, e.target.value)}
+        className="p-2 border border-gray-400 rounded w-1/5 text-black mb-2"
         >
-          <option value="">Select Agent</option>
-          {availableAgents.map((agent) => (
+        <option value="">Select Agent</option>
+        {availableAgents.map((agent) => (
             <option key={agent} value={agent}>
-              {agent}
+            {agent}
             </option>
-          ))}
+        ))}
         </select>
       );
-    });
+    })}</div>);
   };
+
+  const renderPlayerNames = (teamName?: string) => {
+    if(isGameInDatabase && teamName) {
+        return <div className="flex gap-2">{GetPlayerNameRow(teamName).map(x => (<div key={x} className="p-2 border border-gray-400 rounded w-1/5 text-black mb-2">{x}</div>))}</div>
+    }
+    return 
+  }
   
   const FixMapNumber = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 
@@ -195,15 +306,48 @@ export default function AddGamePage() {
     }
   }
 
-  const getRoundColor = (winner: string) => {
-    if (winner === formData.teamA && formData.teamA != "") return blue + " text-white hover:" + blue;
-    if (winner === formData.teamB && formData.teamB != "") return red + " text-white hover:" + red;
+  const getRoundColor = (winner: number) => {
+    if (winner === formData.teamAId && formData.teamAId != -1) return blue + " text-white hover:" + blue;
+    if (winner === formData.teamBId && formData.teamBId != -1) return red + " text-white hover:" + red;
     return empty + " text-white hover:" + empty; // fallback for no winner
   };
 
   const getFullGameName = (game: Game) => {
     return `${game.TeamNameA} vs ${game.TeamNameB} BO${game.MapCount} Meeting: ${game.MatchNumber}`
   }
+
+  const GetPlayerNameRow = (teamName?: string): string[] => {
+    const players = teams.find(x => x.Name == teamName)?.Players;
+
+    const playerNames: string[] = Array(5);
+    roles.forEach((role, index) => {
+        playerNames[index] = players?.find(x => x.Role == role)?.Name ?? "";
+    })
+    return playerNames;
+  }
+
+  const renderStatInputs = (
+        stats: string[],
+        setStats: React.Dispatch<React.SetStateAction<string[]>>,
+        keyPrefix: string,
+        placeholder: string
+    ) => (
+        <div className="flex gap-2 mb-4">
+            {stats.map((value, index) => (
+                <input
+                    key={`${keyPrefix}-${index}`}
+                    type="text"
+                    className="w-1/5 p-2 border border-gray-400 rounded"
+                    value={value}
+                    placeholder={placeholder}
+                    onChange={(e) => {
+                        const updated = [...stats];
+                        updated[index] = e.target.value;
+                        setStats(updated);
+                    }}
+                />
+            ))}
+        </div>);
 
   return (
     <div className="min-h-screen w-screen p-4 space-y-4 text-black bg-white">
@@ -271,14 +415,14 @@ export default function AddGamePage() {
           {/* Team A Name Selector*/}
           <select
             name="teamA"
-            value={formData.teamA}
+            value={formData.teamAName}
             onChange={handleChange}
             disabled={isGameInDatabase}
             className="flex-1 border rounded-md p-2 bg-white text-black"
           >
             <option value="">Select Team A</option>
             {teams
-              .filter((team) => team.Name !== formData.teamB)
+              .filter((team) => team.Name !== formData.teamBName)
               .map((team) => (
               <option key={team.Id} value={team.Name}>
                 {team.Name}
@@ -291,7 +435,14 @@ export default function AddGamePage() {
 
           <div>
             <h2 className="font-semibold mb-2">Team A Agents</h2>
+            {renderPlayerNames(game?.TeamNameA)}
             {renderAgentDropdowns(teamAAgents, "A")}
+            {isGameInDatabase && (
+                <>
+                    {renderStatInputs(teamAFirstHalfStats, setTeamAFirstHalfStats, 'First-A', 'First Half Stats')}
+                    {renderStatInputs(teamATotalStats, setTeamATotalStats, 'Total-A', 'Total Stats')}
+                </>
+            )}
           </div>
           {errors.missingAgentsTeamA && <div className="text-red-600 text-sm">{errors.missingAgentsTeamA}</div>}
         </div>
@@ -301,14 +452,14 @@ export default function AddGamePage() {
           {/* Team B Name Selector*/}
           <select
             name="teamB"
-            value={formData.teamB}
+            value={formData.teamBName}
             onChange={handleChange}
             disabled={isGameInDatabase}
             className="flex-1 border rounded-md p-2 bg-white text-black"
             >
             <option value="">Select Team B</option>
             {teams
-              .filter((team) => team.Name !== formData.teamA)
+              .filter((team) => team.Name !== formData.teamAName)
               .map((team) => (
                 <option key={team.Id} value={team.Name}>
                 {team.Name}
@@ -320,7 +471,14 @@ export default function AddGamePage() {
           {/* Team B Agent Selectors*/}
           <div>
             <h2 className="font-semibold mb-2">Team B Agents</h2>
+            {renderPlayerNames(game?.TeamNameB)}
             {renderAgentDropdowns(teamBAgents, "B")}
+            {isGameInDatabase && (
+                <>
+                    {renderStatInputs(teamBFirstHalfStats, setTeamBFirstHalfStats, 'First-B', 'First Half Stats')}
+                    {renderStatInputs(teamBTotalStats, setTeamBTotalStats, 'Total-B', 'Total Stats')}
+                </>
+            )}
           </div>
           {errors.missingAgentsTeamB && <div className="text-red-600 text-sm">{errors.missingAgentsTeamB}</div>}
 
@@ -348,7 +506,7 @@ export default function AddGamePage() {
 
       <div className="flex gap-2 overflow-x-auto whitespace-nowrap py-2">
         {roundDetails.map((round, index) => {
-          const winner = round.winner;
+          const winner = round.RoundWinnerId;
           const colorClass = getRoundColor(winner);
           
           const handleRoundClick = (e: React.MouseEvent) => {
@@ -356,13 +514,13 @@ export default function AddGamePage() {
               openRoundDialog(index);
             } else {
               // Cycle through TeamA -> TeamB -> None
-              let nextWinner = "";
-              if (winner === "") nextWinner = formData.teamA;
-              else if (winner === formData.teamA) nextWinner = formData.teamB;
-              else nextWinner = "";
-              
+
+              let nextWinner = -1;
+              if (winner === -1) nextWinner = formData.teamAId;
+              else if (winner === formData.teamAId) nextWinner = formData.teamBId;
+              else nextWinner = -1;
               const updatedRounds = [...roundDetails];
-              updatedRounds[index] = { ...updatedRounds[index], winner: nextWinner };
+              updatedRounds[index] = { ...updatedRounds[index], RoundWinnerId: nextWinner };
               setRoundDetails(updatedRounds);
             }
           };
@@ -393,21 +551,21 @@ export default function AddGamePage() {
                   Enter details about this round such as who won and any important notes.
                 </DialogDescription>
                 <select
-                  value={dialogInput.winner}
-                  onChange={(e) => setDialogInput({ ...dialogInput, winner: e.target.value })}
+                  value={dialogInput.RoundWinnerId}
+                  onChange={(e) => setDialogInput({ ...dialogInput, RoundWinnerId: Number(e.target.value) })}
                   className="w-full border rounded-md p-2 bg-beige-300 text-black"
                 >
-                  <option value="">Select Winner</option>
-                  <option value={formData.teamA}>{formData.teamA}</option>
-                  <option value={formData.teamB}>{formData.teamB}</option>
+                  <option value={-1}>Select Winner</option>
+                  <option value={formData.teamAId}>{formData.teamAName}</option>
+                  <option value={formData.teamBId}>{formData.teamBName}</option>
                 </select>
                 <Input
                   placeholder="Notes about the round"
-                  value={dialogInput.notes}
-                  onChange={(e) => setDialogInput({ ...dialogInput, notes: e.target.value })}
+                  value={dialogInput.Notes}
+                  onChange={(e) => setDialogInput({ ...dialogInput, Notes: e.target.value })}
                   className="text-black"
                 />
-                <DragAndDropList allowDuplicates={true} hasClutchItem={true}/>
+                <DragAndDropList startingValues={startingEvents} allowDuplicates={true} hasClutchItem={true} onChange={saveEvents}/>
 
 
 

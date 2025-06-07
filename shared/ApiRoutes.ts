@@ -59,3 +59,23 @@ export const DeleteTournamentRoute = "/api/deleteTournament"
 // Request Body: None
 // Returns: PlayerArray
 export const FetchAllPlayersWithoutTeams = "/api/playersWithoutTeams"
+
+// URL parameters: None
+// Request Body: None
+// Returns: AgentArray
+export const FetchAgentsRoute = "/api/agents"
+
+// URL parameters: Role
+// Request Body: None
+// Returns: AgentArray
+export const FetchAgentsByRoleRoute = "/api/agents"
+
+// URL parameters: None
+// Request Body: TournamentMap
+// Returns: None
+export const PostTournamentMap = "/api/saveTournamentMap"
+
+// URL parameters: None
+// Request Body: OtherMap
+// Returns: None
+export const PostOtherMap = "/api/saveOtherMap"

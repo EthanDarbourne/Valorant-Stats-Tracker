@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { makeColumnMap } from "./MakeCol";
 import { QueryBuilder } from "../QueryBuilder";
-import pool from "../db";
 import { SQLComparator } from "../Helpers";
 
 

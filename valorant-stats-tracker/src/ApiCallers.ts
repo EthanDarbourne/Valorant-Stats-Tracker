@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams } from '../../shared/ApiRoutes';
+import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute } from '../../shared/ApiRoutes';
 import { DefaultTournament, FixDates, TournamentInfo, TournamentArraySchema, EntireTournament, EntireTournamentSchema } from "../../shared/TournamentSchema";
 import { GameArray, GameArraySchema } from "../../shared/GameSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
@@ -177,4 +177,42 @@ export function useTournamentGamesById(tournamentId: number) {
 
 
     return [games, setGames] as const;
+}
+
+export function useAgents() {
+    const [agents, setAgents] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAgentsRoute}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch agents");
+            return res.json();
+        })
+        .then((data) => {
+            const agentNames = data.map((item: { Name: string }) => item.Name);
+            setAgents(agentNames);
+        })
+        .catch((err) => console.error(err))
+    }, []);
+
+    return agents;
+}
+
+export function useAgentsByRole(role: string) {
+    const [agents, setAgents] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAgentsByRoleRoute}?Role=${encodeURIComponent(role)}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch agents by role");
+            return res.json();
+        })
+        .then((data) => {
+            const agentNames = data.map((item: { Name: string }) => item.Name);
+            setAgents(agentNames);
+        })
+        .catch((err) => console.error(err))
+    }, [role]);
+
+    return agents;
 }

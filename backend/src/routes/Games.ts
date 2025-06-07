@@ -16,7 +16,7 @@ router.get(FetchGamesByTournamentIdRoute, async (req: Request, res: Response) =>
 
         const qb = new QueryBuilder(pool);
         
-        const tournamentId = Number(req.query.tournamentId as string);
+        const tournamentId = Number(req.query.TournamentId as string);
         
         
         const games = await SelectGamesByTournamentId(qb, tournamentId);
@@ -43,5 +43,8 @@ router.get(FetchGamesByTournamentIdRoute, async (req: Request, res: Response) =>
         SetResponse(res, RESPONSE_INTERNAL_ERROR);
     }
 });
+
+
+
 
 export default router;
