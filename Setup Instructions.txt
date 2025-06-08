@@ -1,0 +1,5 @@
+
+
+1. Install Node.js (do not need chocolatey)
+2. Verify installation with "node -v" and "npm -v" (may have to restart VS Code)
+3. run npm install in three locations: shared, backend and valorant-stats-tracker

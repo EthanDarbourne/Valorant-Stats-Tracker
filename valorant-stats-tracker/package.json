@@ -22,10 +22,10 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.503.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.1.0",
     "react-router-dom": "^7.5.3",
     "tailwind-merge": "^3.2.0",
-    "zod": "^3.24.4"
+    "zod": "^3.25.56"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
