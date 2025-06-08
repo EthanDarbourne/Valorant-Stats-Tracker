@@ -1,6 +1,6 @@
 import {z} from "zod"
 import { QueryBuilder } from "../QueryBuilder";
-import { makeColumnMap } from "./MakeCol";
+import { extractValueInSchemaOrder, makeColumnMap } from "./MakeCol";
 
 
 export const TournamentMapsTableSchema = z.object({
@@ -23,9 +23,10 @@ export const TournamentMapsColumns = makeColumnMap(TournamentMapsTableSchema);
 
 export async function InsertTournamentMap(qb: QueryBuilder, map: TournamentMapRow): Promise<number> {
 
-    qb.Insert(TournamentMapsTableName, Object.keys(TournamentMapsColumns))
-        .AddValue(Object.values(map))
-        .GetReturnValue("Id");
+  const { Id, ...columnsWithoutId } = TournamentMapsColumns;
+    qb.Insert(TournamentMapsTableName, Object.keys(columnsWithoutId))
+        .AddValue(extractValueInSchemaOrder(columnsWithoutId, map))
+        .GetReturnValue(TournamentMapsColumns.Id);
 
     const result = await qb.Execute();
     return Number(result.rows[0][TournamentMapsColumns.Id]);

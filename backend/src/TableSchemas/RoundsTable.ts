@@ -1,9 +1,10 @@
 import { z } from "zod"
 import { QueryBuilder } from "../QueryBuilder"
-import { makeColumnMap } from "./MakeCol";
+import { extractValuesInSchemaOrder, makeColumnMap } from "./MakeCol";
 
 export const RoundsSchema = z.object({
     TournamentGameId: z.number(),
+    TournamentMapId: z.number(),
     RoundNumber: z.number(),
     TeamAId: z.number(),
     TeamBId: z.number(),
@@ -19,7 +20,7 @@ export const RoundsTableName = "TournamentRounds"
 
 export async function InsertRounds(qb: QueryBuilder, rounds: RoundRow[]) {
     qb.Insert(RoundsTableName, Object.keys(RoundsColumns))
-        .AddValues(rounds.map(x => Object.values(x)));
+        .AddValues(extractValuesInSchemaOrder(RoundsColumns, rounds));
 
     await qb.Execute();
 }

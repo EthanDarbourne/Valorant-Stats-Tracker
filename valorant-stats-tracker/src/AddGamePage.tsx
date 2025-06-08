@@ -1,9 +1,9 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
-import DragAndDropList from "@/components/ui/DragDropList"
+import DragAndDropList, { DragAndDropListHandle } from "@/components/ui/DragDropList"
 import { useGameContext } from "@/GameContext";
 import { useAgents, useMaps, useTeamsByTournamentId, useTournamentGamesById, useTournaments } from "./ApiCallers"
 import HomeButton from "./components/ui/HomeButton";
@@ -12,6 +12,7 @@ import { DefaultTournament, TournamentInfo } from "../../shared/TournamentSchema
 import { OtherMap, PlayerStats, RoundInfo, StatLine, TournamentMap } from "../../shared/EntireGameSchema";
 import { roles } from "./Constants";
 import { updateOtherGame, updateTournamentGame } from "./ApiPosters";
+import AgentImage from "./components/ui/AgentCard";
 
 // Information To Submit
 // two submits:
@@ -126,7 +127,7 @@ export default function AddGamePage() {
     team === "A" ? setTeamAAgents(currentAgents) : setTeamBAgents(currentAgents);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
 
     let formErrors: { [key: string]: string } = {};
 
@@ -212,6 +213,7 @@ export default function AddGamePage() {
         TotalStats: parseStat(teamBTotalStats[i])
     }));
 
+    let res: Response;
     if(isGameInDatabase) {
         // submit 
         if(game === undefined) {
@@ -222,25 +224,29 @@ export default function AddGamePage() {
             GameId: game.Id,
             TeamA: { TeamId: formData.teamAId, DefendingFirst: defendingFirst, Players: playerAStats },
             TeamB: { TeamId: formData.teamBId, DefendingFirst: !defendingFirst, Players: playerBStats },
-            MapNumber: formData.mapNumber,
+            MapNumber: Number(formData.mapNumber),
             MapName: formData.map,
             Date: formData.date,
-            Rounds: roundDetails
+            Rounds: roundDetails.filter(x => x.RoundWinnerId !== -1)
         }
 
-        updateTournamentGame(tournamentGame);
+        res = await updateTournamentGame(tournamentGame);
     }
     else {
 
         const otherGame: OtherMap = {};
-        updateOtherGame(otherGame);
+        res = await updateOtherGame(otherGame);
     }
-
+    if(res.status != 200) {
+      console.log("Failed");
+      return;
+    }
     //addGame(formData);
     navigate("/");
   };
 
   const openRoundDialog = (index: number) => {
+    if(teamAAgents.some(x => x == "") || teamBAgents.some(x => x == ""))return;
     setActiveRound(index);
     setStartingEvents(roundDetails[index].Events);
     setDialogInput(roundDetails[index]);
@@ -348,6 +354,27 @@ export default function AddGamePage() {
                 />
             ))}
         </div>);
+
+const listRef = useRef<DragAndDropListHandle>(null);
+    function DragListWithAgents() {
+
+      const handleAdd = (teamName: string, agentName: string) => {
+          listRef.current?.addItem(`Death:${teamName}-${agentName}`);
+      };
+
+      return (
+          <>
+          <div className="flex">{teamAAgents.map(x => <AgentImage agentName={x} onClick={() => handleAdd(formData.teamAName, x)}/>)}</div>
+          <div className="flex">{teamBAgents.map(x => <AgentImage agentName={x} onClick={() => handleAdd(formData.teamBName, x)}/>)}</div>
+                
+                
+              <DragAndDropList
+                  ref={listRef}
+                  startingValues={startingEvents} allowDuplicates={true} hasClutchItem={true} onChange={saveEvents}
+              />
+          </>
+      );
+  }
 
   return (
     <div className="min-h-screen w-screen p-4 space-y-4 text-black bg-white">
@@ -543,7 +570,7 @@ export default function AddGamePage() {
       <Dialog open={activeRound !== null} onOpenChange={(open) => {
           if (!open) setActiveRound(null);
         }}>
-          <DialogContent className="space-y-4 text-black max-h-[80vh] overflow-y-auto">
+          <DialogContent className="space-y-4 text-black max-h-[100vh] overflow-y-auto">
             {activeRound !== null && (
               <>
                 <DialogTitle>Round {activeRound + 1} Info</DialogTitle>
@@ -565,7 +592,8 @@ export default function AddGamePage() {
                   onChange={(e) => setDialogInput({ ...dialogInput, Notes: e.target.value })}
                   className="text-black"
                 />
-                <DragAndDropList startingValues={startingEvents} allowDuplicates={true} hasClutchItem={true} onChange={saveEvents}/>
+                {DragListWithAgents()}
+                {/* <DragAndDropList startingValues={startingEvents} allowDuplicates={true} hasClutchItem={true} onChange={saveEvents}/> */}
 
 
 

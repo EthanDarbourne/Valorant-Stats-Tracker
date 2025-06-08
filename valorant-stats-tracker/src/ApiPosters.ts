@@ -95,7 +95,7 @@ export async function updateTournamentGame(game: TournamentMap) {
     throw new Error(`Failed to post tournament game: ${response.status} ${errorText}`);
   }
 
-  return await response.json();
+  return response;
 }
 
 export async function updateOtherGame(game: OtherMap) {
@@ -112,5 +112,5 @@ export async function updateOtherGame(game: OtherMap) {
     throw new Error(`Failed to post other game: ${response.status} ${errorText}`);
   }
 
-  return await response.json();
+  return response;
 }

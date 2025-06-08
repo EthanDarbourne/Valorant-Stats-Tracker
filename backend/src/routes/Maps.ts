@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { GetMapsList } from '../TableSchemas/MapsTable';
-import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST, SetResponse } from '../Helpers';
+import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
 import { FetchMapsRoute, PostTournamentMap } from '../../../shared/ApiRoutes';
@@ -22,6 +22,7 @@ router.post(PostTournamentMap, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     try {
         await qb.Connect();
+        await qb.BeginTransaction();
         const parsed = TournamentMapSchema.safeParse(req.body);
         if(!parsed.success) {
             SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Invalid tournament game", details: parsed.error.errors });
@@ -61,7 +62,6 @@ router.post(PostTournamentMap, async (req: Request, res: Response) => {
         const defendingTeamId = tournamentMap.TeamA.DefendingFirst ? teamAId : teamBId;
         const attackingTeamId = tournamentMap.TeamA.DefendingFirst ? teamBId : teamAId;
 
-        // todo: Insert players
         const getPlayerStats = (players: PlayerStats[]) => players.map(player => ({
             TournamentId: tournamentId,
             GameId: gameId,
@@ -96,17 +96,19 @@ router.post(PostTournamentMap, async (req: Request, res: Response) => {
             TournamentGameId: gameId,
             TournamentMapId: mapId,
             RoundNumber: index + 1,
-            RoundWinnerId: round.RoundWinnerId,
             EventOrder: eventIdx + 1,
             EventName: event
         })))
 
         await InsertRounds(qb, simpleRounds);
         await InsertRoundEvents(qb, roundEvents);
-
+        await qb.Commit();
+        SetResponse(res, RESPONSE_OK, { message: "Added game successfully" });
     }
     catch (error) {
-        console
+        console.log(error);
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to add game" });
+        await qb.Rollback();
     }
     finally {
         qb.Disconnect();
