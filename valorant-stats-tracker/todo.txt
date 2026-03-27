@@ -73,3 +73,19 @@ Fix route constant names and determine route schema (move routes to shared const
 Split ApiCallers and ApiPosters into files by datatype (like backend)
 Better naming for different types of games (tournament vs not tournament)
 Check naming convention ApiCallers and ApiPosters function names (also split into better files)
+
+
+
+List:
+Deletes should be protected. Mark as deleted in database
+Consolidate a theme for the app. Set fonts, colors, spacings etc.
+Fix EditTournaments:61
+Add international setting to team selection page in Create Tournament
+Seeds can all be one seeds. Or 1-4 
+Skip steps going backwards as well
+
+Need to clear generated matches
+Need Update Tournament Page to update tournament results
+
+Tournament Options:
+Group Stage - only groups, generate matches at group stage

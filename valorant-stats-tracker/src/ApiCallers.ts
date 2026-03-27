@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute } from '../../shared/ApiRoutes';
+import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute } from '../../shared/ApiRoutes';
 import { DefaultTournament, FixDates, TournamentInfo, TournamentArraySchema, EntireTournament, EntireTournamentSchema } from "../../shared/TournamentSchema";
 import { GameArray, GameArraySchema } from "../../shared/GameSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
@@ -106,6 +106,25 @@ export function useTeamsByTournamentId(tournamentId: number) {
     }, [tournamentId]);
 
     return [teams, setTeams] as const;
+}
+
+export function useTeamsByTeamName(teamNames: string[]) {
+    const [teams, setTeams] = useState<TeamArray>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchTeamsByTeamNameRoute}?Teams=${encodeURIComponent(teamNames.join(','))}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch teams by tournament");
+            return res.json();
+        })
+        .then((data) => {
+            const teams = TeamArraySchema.parse(data);
+            setTeams(teams);
+        })
+        .catch((err) => console.error(err))
+    }, [teamNames]);
+
+    return teams;
 }
 
 export function useTournaments() {

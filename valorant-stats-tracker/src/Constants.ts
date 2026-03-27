@@ -9,7 +9,14 @@ export enum Regions {
     CN = "CN"
 }
 
+export enum TournamentTypes {
+    StageWithinGroup = "StageWithinGroup",
+    StageOutOfGroup = "StageOutOfGroup",
+    SwissIntoDoubleElim = "SwissIntoDoubleElim",
+    DoubleElim = "DoubleElim"
+}
+
 export const RegionList = Object.values(Regions);
+export const TournamentTypeList = Object.values(TournamentTypes);
 
 export const roles = ['Duelist', 'Initiator', 'Smokes', 'Senti', 'Flex'];
-

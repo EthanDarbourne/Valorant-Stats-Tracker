@@ -20,6 +20,11 @@ export const FetchTournamentByIdRoute = "/api/tournamentById"
 // Returns: TeamArray
 export const FetchTeamsByRegionRoute = "/api/teamsByRegion"
 
+// URL parameters: Teams (comma seperated list of team names)
+// Request Body: None
+// Returns: TeamArray
+export const FetchTeamsByTeamNameRoute = "/api/teamsByTeamName"
+
 // URL parameters: TournamentId
 // Request Body: None
 // Returns: TeamArray

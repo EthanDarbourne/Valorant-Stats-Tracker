@@ -12,20 +12,21 @@ export default function TournamentsPage() {
     const navigate = useNavigate();
 
   const nextId = useRef(-1);
-  const handleAddTournament = () => {
-    setTournaments([
-      ...tournaments,
-      {
-        Id: nextId.current--,
-        Name: "",
-        Location: "",
-        StartDate: toInputDateString(Date()),
-        EndDate: toInputDateString(Date()),
-        Completed: false,
-        Teams: []
-      },
-    ]);
-  };
+  const handleAddTournament = () => navigate('/create-tournament');
+//   () => {
+//     setTournaments([
+//       ...tournaments,
+//       {
+//         Id: nextId.current--,
+//         Name: "",
+//         Location: "",
+//         StartDate: toInputDateString(Date()),
+//         EndDate: toInputDateString(Date()),
+//         Completed: false,
+//         Teams: []
+//       },
+//     ]);
+//   };
 
   const [tournaments, setTournaments] = useTournaments();
 
@@ -74,6 +75,7 @@ export default function TournamentsPage() {
         >
           Save All
         </button>
+        <HomeButton />
       </div>
 
       <div className="flex flex-col h-screen p-0 m-0 overflow-x-auto">

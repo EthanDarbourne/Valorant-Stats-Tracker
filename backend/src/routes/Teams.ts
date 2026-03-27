@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { GetTeamsByRegion, SelectTeamNameByIds, UpdateTeam } from '../TableSchemas/TeamsTable';
+import { GetTeamsByRegion, SelectTeamNameByIds, UpdateTeam, SelectTeamIdsByName } from '../TableSchemas/TeamsTable';
 import { RESPONSE_BAD_REQUEST, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { GetTeamsByTournamentId } from '../TableSchemas/TournamentResultsTable';
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
-import { FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, PostTeamRoute } from '../../../shared/ApiRoutes';
+import { FetchTeamsByRegionRoute, FetchTeamsByTeamNameRoute, FetchTeamsByTournamentIdRoute, PostTeamRoute } from '../../../shared/ApiRoutes';
 import { AddPlayersToTeams, UpdatePlayersInTeam } from '../TableSchemas/PlayersTable';
 import { TeamSchema } from '../../../shared/TeamSchema';
 
@@ -21,6 +21,31 @@ router.get(FetchTeamsByRegionRoute, async (req: Request, res: Response) => {
     try {
         await qb.Connect();
         const teamIdentities = await GetTeamsByRegion(qb, region);
+
+        const teamsWithPlayers = await AddPlayersToTeams(qb, teamIdentities);
+
+        SetResponse(res, RESPONSE_OK, teamsWithPlayers);
+    }
+    catch (error) {
+        console.log(error);
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to select teams from database" });
+    }
+    finally {
+        qb.Disconnect();
+    }
+});
+
+router.get(FetchTeamsByTeamNameRoute, async (req: Request, res: Response) => {
+    const qb = new QueryBuilder(pool);
+    const teamNames = (req.query.Teams as string).split(',');
+    
+    if (!teamNames) {
+        SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Teams are required" });
+        return;
+    }
+    try {
+        await qb.Connect();
+        const teamIdentities = await SelectTeamIdsByName(qb, teamNames);
 
         const teamsWithPlayers = await AddPlayersToTeams(qb, teamIdentities);
 
