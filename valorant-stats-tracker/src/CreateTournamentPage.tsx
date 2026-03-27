@@ -4,10 +4,15 @@ import HomeButton from "./components/ui/HomeButton";
 import { useAllTeamsByRegions, useTeamsByTeamName } from "./ApiCallers";
 import { RegionList, Regions, TournamentTypeList, TournamentTypes } from './Constants';
 import { Team } from "../../shared/TeamSchema";
+import { generateBracket } from "./BracketGenerator";
+import { BracketMatch, BracketView } from "./BracketView";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-const doubleElimTeamCounts = [8,12];
+const swissTeamCounts = [4, 6, 8, 10, 12, 16];
+const doubleElimTeamCounts = [4, 8, 12, 16];
+const groupStageTeamCounts = [8, 10, 12];
+const singleElimTeamCounts = [4,8,12,16,32];
 
 // we don't handle scores here, just set up the initial bracket
 interface TournamentMatchNode {
@@ -23,6 +28,7 @@ const FORMAT_LABELS: Record<TournamentTypes, string> = {
   StageOutOfGroup:  "Regional Stage Outside Your Group",
   SwissIntoDoubleElim:  "Swiss Into Double Elim",
   DoubleElim:        "Double Elimination",
+  SingleElim:        "Single Elimination",
 };
 
 const FORMAT_DESCRIPTIONS: Record<TournamentTypes, string> = {
@@ -30,11 +36,13 @@ const FORMAT_DESCRIPTIONS: Record<TournamentTypes, string> = {
   StageOutOfGroup:  "Play every team in the other group once",
   SwissIntoDoubleElim:  "Swiss Stage into double elimination bracket",
   DoubleElim:        "Double Elimination Bracket",
+  SingleElim:        "Single Elimination Bracket",
 };
 
 // ─── Bracket generation helpers ──────────────────────────────────────────────
 
 const isStageTournament = (format: TournamentTypes) => format == TournamentTypes.StageOutOfGroup || format == TournamentTypes.StageWithinGroup;
+const isElimTournament = (format: TournamentTypes) => format == TournamentTypes.DoubleElim || format == TournamentTypes.SingleElim;
 
 function getSeededCount(teamCount: number, format: TournamentTypes): number {
 
@@ -42,7 +50,7 @@ function getSeededCount(teamCount: number, format: TournamentTypes): number {
         // no seeding for games in Stage 1 or Stage 2
         return 0;
     }
-    else if (format == TournamentTypes.DoubleElim) {
+    else if (isElimTournament(format)) {
         if (teamCount == 12) return 4;
         else return 0;
     }
@@ -60,11 +68,17 @@ function getSkippedSteps(format: TournamentTypes, teamCount: number): number[] {
     if(isStageTournament(format)) {
         return [3,5];
     }
+    if(isElimTournament(format)) {
+        if (teamCount == 12) { // todo: change to isPowerOfTwo()
+            return [4]; // if we have 12 teams, 4 need to get a bye
+        }
+        return [3,4];
+    }
     return [];
 }
 
 
-function generateSingleElim(teams: (Team | null)[]): TournamentMatchNode[] {
+function generateDoubleElim(teams: (Team | null)[]): TournamentMatchNode[] {
   const n = teams.length;
   const rounds = Math.ceil(Math.log2(n));
   const matches: TournamentMatchNode[] = [];
@@ -124,24 +138,25 @@ function generateSwissRound(
   return newMatches;
 }
 
-function generateGroupStage(groups: Team[][], playWithinGroup: boolean): TournamentMatchNode[] {
+function generateGroupStage(groups: Team[][], playWithinGroup: boolean): BracketMatch[] {
   
 
     if (!playWithinGroup && groups.length !== 2) {
         console.error("Too many groups to play outside");
         return [];
     }
-    function CreateMatch(team1: Team, team2: Team) {
+    function CreateMatch(team1: Team, team2: Team): BracketMatch {
         return {
-                id: null,
-                teamA: team1,
-                teamB: team2,
+                id: team1.Name + team2.Name,
+
+                team1: team1,
+                team2: team2,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
             }
     }
 
-    const matches: TournamentMatchNode[] = [];
+    const matches: BracketMatch[] = [];
     if(playWithinGroup) {
         groups.forEach((group) => {
             for (let a = 0; a < group.length; a++) {
@@ -221,8 +236,9 @@ function StepFormat({
 
     // todo: validate team counts
   const validCounts = (fmt: TournamentTypes) => {
-    if (fmt === TournamentTypes.SwissIntoDoubleElim) return [4, 6, 8, 10, 12, 16];
-    if (fmt === TournamentTypes.StageWithinGroup || fmt === TournamentTypes.StageOutOfGroup) return [8, 10, 12];
+    if (fmt === TournamentTypes.SwissIntoDoubleElim) return swissTeamCounts;
+    if (isStageTournament(fmt)) return groupStageTeamCounts;
+    if (fmt == TournamentTypes.DoubleElim) return doubleElimTeamCounts;
     return [4, 8, 16, 32];
   };
 
@@ -478,7 +494,7 @@ function StepSeeding({
     dragTeam.current = null;
   };
 
-  const slots = Array.from({ length: teamCount }, (_, i) => seeds[i] ?? null);
+  const slots = Array.from({ length: seeds.length }, (_, i) => seeds[i] ?? null);
 
   return (
     <div className="space-y-6">
@@ -959,13 +975,13 @@ return null;
 // }
 
 function StepBracket({
-  format, matches, setMatches, teams,
+  matches, setMatches
 }: {
-  format: TournamentTypes;
-  matches: TournamentMatchNode[];
-  setMatches: (m: TournamentMatchNode[]) => void;
-  teams: Team[];
+  matches: BracketMatch[];
+  setMatches: (m: BracketMatch[]) => void;
 }) {
+
+    return <BracketView matches={matches} onChange={setMatches}/>
   const handleScore = (matchId: string, scoreA: number, scoreB: number) => {
     // const updated = matches.map(m => {
     //   if (m.id !== matchId) return m;
@@ -1032,7 +1048,7 @@ function StepFinalize({
   format: TournamentTypes;
   seeds: (Team | null)[];
   groups: Team[][];
-  matches: TournamentMatchNode[]; // replace with your bracket type
+  matches: BracketMatch[]; // replace with your bracket type
   teamCount: number;
 }) {
   const hasSeeds = seeds && seeds.some(s => s !== null);
@@ -1160,7 +1176,7 @@ export default function CreateTournamentPage() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [seeds, setSeeds] = useState<(Team | null)[]>(Array(teamCount).fill(null));
   const [groups, setGroups] = useState<Team[][]>([Array(teamCount).fill(null)]);
-  const [matches, setMatches] = useState<TournamentMatchNode[]>([]);
+  const [matches, setMatches] = useState<BracketMatch[]>([]);
   const [saving, setSaving] = useState(false);
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
 
@@ -1175,27 +1191,27 @@ export default function CreateTournamentPage() {
   const canProceed = () => {
     if (step === 1) return name.trim().length > 0;
     if (step === 2) return selectedTeams.length === teamCount;
-    if (step === 3) return seeds.filter(Boolean).length === teamCount;
+    if (step === 3) return seeds.filter(Boolean).length === seeds.length;
     return true;
   };
 
   const handleNext = () => {
     let nextStep = step + 1;
-    if (step === 3) {
+    // if (step === 3) {
       
-      // Generate initial bracket
-      const seededTeams = seeds.filter((s): s is Team => s !== null);
-      let generated: TournamentMatchNode[] = [];
-    //   if (isStageTournament(format)) {
-    //     generated = generateGroupStage(seededTeams);
-    //   } 
-    // else if (format === "swiss") {
-    //     generated = generateSwissRound(seededTeams, [], 1);
-    //   } else if (format === "group_stage") {
-    //     generated = generateGroupStage(seededTeams);
-    //   }
-      setMatches(generated);
-    }
+    //   // Generate initial bracket
+    //   const seededTeams = seeds.filter((s): s is Team => s !== null);
+    //   let generated: TournamentMatchNode[] = [];
+    // //   if (isStageTournament(format)) {
+    // //     generated = generateGroupStage(seededTeams);
+    // //   } 
+    // // else if (format === "swiss") {
+    // //     generated = generateSwissRound(seededTeams, [], 1);
+    // //   } else if (format === "group_stage") {
+    // //     generated = generateGroupStage(seededTeams);
+    // //   }
+    //   setMatches(generated);
+    // }
     if (step === 1) {
       setSeeds(Array(teamCount).fill(null));
     }
@@ -1209,19 +1225,28 @@ export default function CreateTournamentPage() {
     if (step == 4) {
         if (isStageTournament(format)) {
             nextStep++; // skip the bracket step
-            let generated: TournamentMatchNode[] = generateGroupStage(groups, format == TournamentTypes.StageWithinGroup);
-            setMatches(matches.concat(generated));
+            let generated: BracketMatch[] = generateGroupStage(groups, format == TournamentTypes.StageWithinGroup);
+            setMatches(generated); // these are the only matches for a stage tournament
         }
 
     }
     while(skippedSteps.includes(nextStep)) {
         nextStep++;
     }
-
-    if (nextStep == 4) {
+    if (nextStep == 3) { // seeding
+        console.log("Setting", seededCount)
+        setSeeds(Array.from({length: seededCount }, () => null))
+    }
+    if (nextStep == 4) { // Grouping
         let index = 0;
-        const seededTeams = teams.filter(t => !seeds.find(s => s?.Id === t.Id));//.filter(team => !seeds.find(team))
+        const seededTeams = teams.filter(t => !seeds.find(s => s?.Id === t.Id));
         setGroups([Array.from({length: teamCount - seededCount }, () => seededTeams[index++])]);
+    }
+    if (nextStep == 5) { // Bracket
+        // generate the games for the bracket
+        const tmp = generateBracket({teams, format, byeTeams: seeds.filter(x => x !== null)});
+        console.log("Setting matches", tmp)
+        setMatches(tmp);
     }
     setStep(nextStep);
   };
@@ -1241,7 +1266,7 @@ export default function CreateTournamentPage() {
       // await createTournament({ name, format, teamCount, seeds, matches });
       console.log("Saving tournament:", { name, format, teamCount, seeds, matches });
       await new Promise(r => setTimeout(r, 800)); // mock delay
-      navigate("/tournaments");
+      navigate("/add-tournaments");
     } finally {
       setSaving(false);
     }
@@ -1261,7 +1286,7 @@ export default function CreateTournamentPage() {
             )}
           </div>
           <button
-            onClick={() => navigate("/tournaments")}
+            onClick={() => navigate("/add-tournaments")}
             className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
           >
             ← Back to Tournaments
@@ -1307,9 +1332,10 @@ export default function CreateTournamentPage() {
           {step === 5 && (
             <StepBracket
               format={format}
-              matches={matches}
+            //   matches={matches}
               setMatches={setMatches}
-              teams={seeds.filter((s): s is Team => s !== null)}
+              teams={teams}
+              seeds={seeds}
             />
           )}
           {step === 6 && (

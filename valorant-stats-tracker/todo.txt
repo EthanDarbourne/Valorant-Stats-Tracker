@@ -86,6 +86,9 @@ Skip steps going backwards as well
 
 Need to clear generated matches
 Need Update Tournament Page to update tournament results
+Change BracketMatch id to number
 
 Tournament Options:
 Group Stage - only groups, generate matches at group stage
+Swiss Stage - x teams skip swiss stage (seeded), generate swiss matches then empty bracket
+Double Elim - generate bracket. for 12 teams, 4 teams get byes

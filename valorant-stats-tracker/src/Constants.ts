@@ -13,7 +13,8 @@ export enum TournamentTypes {
     StageWithinGroup = "StageWithinGroup",
     StageOutOfGroup = "StageOutOfGroup",
     SwissIntoDoubleElim = "SwissIntoDoubleElim",
-    DoubleElim = "DoubleElim"
+    DoubleElim = "DoubleElim",
+    SingleElim = "SingleElim",
 }
 
 export const RegionList = Object.values(Regions);
