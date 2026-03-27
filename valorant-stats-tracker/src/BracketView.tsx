@@ -445,7 +445,7 @@ export function BracketView({
   const [editMode, setEditMode] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotRef | null>(null);
   const dragSourceSlot = useRef<SlotRef | null>(null);
-  console.log(initialMatches);
+  
   // Pending swap waiting for user confirmation
   const [pendingSwap, setPendingSwap] = useState<{
     from: SlotRef;

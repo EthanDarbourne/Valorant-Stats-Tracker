@@ -160,14 +160,14 @@ export function generateBracket({
   byeTeams?: Team[];
 }): BracketMatch[] {
   _idCounter = 0; // reset so IDs are deterministic per generation
-  console.log(teams, format, byeTeams);
+  
   const playInTeams = teams.filter(t => !byeTeams.find(b => b.Id === t.Id));
   const byeCount = byeTeams.length;
   const playInCount = playInTeams.length;
 
   // Bracket size = next power of 2 that fits bye teams + play-in winners
   // Each pair of play-in teams produces 1 winner, so we need ceil(playInCount/2) extra slots
-  const bracketSize = nextPow2(byeCount + Math.ceil(playInCount / 2));
+  const bracketSize = nextPow2(byeCount + Math.ceil(playInCount / 2) + 1);
 
   // Build team slot array using seeded ordering
   // Bye teams take the top seeds; play-in teams fill the rest in pairs
@@ -189,11 +189,11 @@ export function generateBracket({
     .filter(({ seed }) => seed > byeCount)
     .sort((a, b) => a.seed - b.seed)
     .map(({ idx }) => idx);
-
+    
   for (let i = 0; i < openSlots.length; i++) {
     slots[openSlots[i]] = playInTeams[i] ?? null;
   }
-
+  
   // Build winners bracket rounds
   const wRounds = buildWinners(slots, isBye);
   const wFlat = wRounds.flat();

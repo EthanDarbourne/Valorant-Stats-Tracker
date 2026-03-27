@@ -75,7 +75,7 @@ Better naming for different types of games (tournament vs not tournament)
 Check naming convention ApiCallers and ApiPosters function names (also split into better files)
 
 
-
+EditTeamsPage Go Back button doesn't work if accessed from home page
 List:
 Deletes should be protected. Mark as deleted in database
 Consolidate a theme for the app. Set fonts, colors, spacings etc.

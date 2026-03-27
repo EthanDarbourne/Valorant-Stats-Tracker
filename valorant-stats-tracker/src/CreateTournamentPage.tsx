@@ -1175,7 +1175,7 @@ export default function CreateTournamentPage() {
   const [teamCount, setTeamCount] = useState(8);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [seeds, setSeeds] = useState<(Team | null)[]>(Array(teamCount).fill(null));
-  const [groups, setGroups] = useState<Team[][]>([Array(teamCount).fill(null)]);
+  const [groups, setGroups] = useState<Team[][]>([]);
   const [matches, setMatches] = useState<BracketMatch[]>([]);
   const [saving, setSaving] = useState(false);
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
@@ -1331,11 +1331,11 @@ export default function CreateTournamentPage() {
           )}
           {step === 5 && (
             <StepBracket
-              format={format}
-            //   matches={matches}
+            //   format={format}
+              matches={matches}
               setMatches={setMatches}
-              teams={teams}
-              seeds={seeds}
+            //   teams={teams}
+            //   seeds={seeds}
             />
           )}
           {step === 6 && (
