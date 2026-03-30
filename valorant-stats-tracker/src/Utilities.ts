@@ -33,4 +33,10 @@ export function getButtonClass({
         .join(" ");
 }
 
-
+export function zipArrays<T, U>(arr1: T[], arr2: U[]): [T, U][] {
+  // Use .map() on the first array to iterate through indices
+  return arr1.map((element, index) => {
+    // Return a tuple containing the element from each array at the same index
+    return [element, arr2[index]];
+  });
+}
