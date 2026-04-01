@@ -5,7 +5,9 @@ import { useAllTeamsByRegions, useTeamsByTeamName } from "./ApiCallers";
 import { RegionList, Regions, TournamentTypeList, TournamentTypes } from "./Constants";
 import { Team } from "../../shared/TeamSchema";
 import { generateBracket } from "./BracketGenerator";
-import { BracketMatch, BracketView } from "./BracketView";
+import { BracketMatch, BracketView, convertToTournamentMatchesTable } from "./BracketView";
+import { EntireTournament } from "../../shared/TournamentSchema";
+import { createTournament } from "./ApiPosters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,7 +143,7 @@ function generateGroupStage(groups: Team[][], playWithinGroup: boolean): Bracket
     }
     function CreateMatch(team1: Team, team2: Team): BracketMatch {
         return {
-            id: team1.Name + team2.Name,
+            matchId: team1.Name + team2.Name,
 
             team1: team1,
             team2: team2,
@@ -740,26 +742,97 @@ function StepFinalize({
     groups,
     matches,
     teamCount,
+    tournamentName,
+    setTournamentName,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    location,
+    setLocation,
 }: {
     format: TournamentTypes;
     seeds: (Team | null)[];
     groups: Team[][];
-    matches: BracketMatch[]; // replace with your bracket type
+    matches: BracketMatch[];
     teamCount: number;
+    tournamentName: string;
+    setTournamentName: (v: string) => void;
+    startDate: Date | null;
+    setStartDate: (v: Date | null) => void;
+    endDate: Date | null;
+    setEndDate: (v: Date | null) => void;
+    location: string;
+    setLocation: (v: string) => void;
 }) {
     const hasSeeds = seeds && seeds.some((s) => s !== null);
     const hasGroups = groups && groups.length > 0;
     const hasMatches = matches && matches.length > 0;
 
+    const inputClass =
+        "w-full bg-gray-900/50 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all";
+
     return (
         <div className="space-y-8">
             <p className="text-sm text-gray-400">Review your tournament setup before creating.</p>
+
+            {/* ── Tournament Details ── */}
+            <section className="space-y-3">
+                <div className="text-xs uppercase tracking-widest text-gray-500">Tournament Details</div>
+                <div className="space-y-3 p-4 rounded-lg bg-gray-900/50 border border-gray-800">
+                    {/* Name */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs text-gray-500">Tournament Name</label>
+                        <input
+                            type="text"
+                            value={tournamentName}
+                            onChange={(e) => setTournamentName(e.target.value)}
+                            placeholder="Enter tournament name"
+                            className={inputClass}
+                        />
+                    </div>
+
+                    {/* Location */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs text-gray-500">Location</label>
+                        <input
+                            type="text"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            placeholder="City, venue, or online"
+                            className={inputClass}
+                        />
+                    </div>
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-gray-500">Start Date</label>
+                            <input
+                                type="date"
+                                value={startDate ? startDate.toISOString().split("T")[0] : ""}
+                                onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
+                                className={`${inputClass} [color-scheme:dark]`}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-gray-500">End Date</label>
+                            <input
+                                type="date"
+                                value={endDate ? endDate.toISOString().split("T")[0] : ""}
+                                onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
+                                min={startDate ? startDate.toISOString().split("T")[0] : ""}
+                                className={`${inputClass} [color-scheme:dark]`}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             {/* ── Tournament Format ── */}
             <section className="space-y-3">
                 <div className="text-xs uppercase tracking-widest text-gray-500">Tournament Format</div>
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-900/50 border border-gray-800">
-                    {/* Swap the icon/label to match your TournamentTypes values */}
                     <div className="w-2 h-2 rounded-full bg-red-500" />
                     <span className="text-sm font-medium text-white capitalize">{format}</span>
                     <span className="ml-auto text-xs text-gray-500">{teamCount} teams</span>
@@ -825,15 +898,9 @@ function StepFinalize({
                     <div className="text-xs uppercase tracking-widest text-gray-500">
                         {matches.length} Matches generated
                     </div>
-                    {/* <div className="rounded-lg bg-gray-900/40 border border-gray-800 p-4 min-h-48 flex items-center justify-center">
-            <span className="text-xs text-gray-600 italic">
-              Bracket preview goes here
-            </span>
-          </div> */}
                 </section>
             )}
 
-            {/* ── No data fallback ── */}
             {!hasSeeds && !hasGroups && !hasMatches && (
                 <div className="text-center py-12 text-gray-600 text-sm italic">
                     No additional configuration to display.
@@ -850,6 +917,9 @@ export default function CreateTournamentPage() {
 
     const [step, setStep] = useState(1);
     const [name, setName] = useState("");
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
+    const [location, setLocation] = useState("");
     const [format, setFormat] = useState<TournamentTypes>(TournamentTypes.DoubleElim);
     const [teamCount, setTeamCount] = useState(8);
     const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -941,14 +1011,46 @@ export default function CreateTournamentPage() {
     };
 
     const handleSave = async () => {
+        if(startDate == null || endDate == null) {
+            console.log("Make sure to set both dates");
+            return;
+        }
         setSaving(true);
         try {
             // TODO: replace with your actual API call
             // await createTournament({ name, format, teamCount, seeds, matches });
-            console.log("Saving tournament:", { name, format, teamCount, seeds, matches });
-            await new Promise((r) => setTimeout(r, 800)); // mock delay
+            // Saving Tournament:
+            //  - Need to create tournament in Tournaments Table
+            //  - Need to create a game for each game in the tournament
+            
+            // add a prefix to matches so we can easily identify them.
+            const prefix = name + "-";
+            matches.forEach(x => {
+                x.matchId = prefix + x.matchId;
+                if (x.loserNextMatchId) x.loserNextMatchId = prefix + x.loserNextMatchId;
+                if (x.winnerNextMatchId) x.winnerNextMatchId = prefix + x.winnerNextMatchId;
+            });
+            const entireTournament: EntireTournament = {
+                Id: -1,
+                Name: name,
+                Format: format,
+                Location: location,
+                Completed: false,
+                StartDate: startDate,
+                EndDate: endDate,
+                Winner: null,
+                Placements: teams.map((x) => ({ TeamId: x.Id, TeamName: x.Name, Placement: null })),
+                Matches: matches.map(convertToTournamentMatchesTable)
+            };
+            const response = await createTournament(entireTournament);
+            console.log("Saved tournament:", response);
             navigate("/add-tournaments");
-        } finally {
+        } 
+        catch (error) {
+            console.log(error);
+            navigate("/add-tournaments");
+        }
+        finally {
             setSaving(false);
         }
     };
@@ -1015,15 +1117,20 @@ export default function CreateTournamentPage() {
                     )}
                     {step === 5 && (
                         <StepBracket
-                            //   format={format}
                             matches={matches}
                             setMatches={setMatches}
-                            //   teams={teams}
-                            //   seeds={seeds}
                         />
                     )}
                     {step === 6 && (
                         <StepFinalize
+                            tournamentName={name}
+                            setTournamentName={setName}
+                            location={location}
+                            setLocation={setLocation}
+                            startDate={startDate}
+                            setStartDate={setStartDate}
+                            endDate={endDate}
+                            setEndDate={setEndDate}
                             format={format}
                             seeds={seeds}
                             groups={groups}

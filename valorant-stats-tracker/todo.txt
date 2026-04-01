@@ -51,6 +51,8 @@ Give feedback on button presses
 
 Backend:
 Transactions!!! (done)
+Use new QueryBuilder.withTransaction in routes
+Add checking for nested transactions in QueryBuilder (don't allow?)
 Separate Helper.ts functions into proper files
 add validation to results from database (using zod)
 History of some tables for backups and reverting
@@ -92,3 +94,5 @@ Tournament Options:
 Group Stage - only groups, generate matches at group stage
 Swiss Stage - x teams skip swiss stage (seeded), generate swiss matches then empty bracket
 Double Elim - generate bracket. for 12 teams, 4 teams get byes
+
+Need to figure out how teams are supposed to drop in brackets.

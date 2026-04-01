@@ -31,7 +31,7 @@ router.get(FetchTeamsByRegionRoute, async (req: Request, res: Response) => {
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to select teams from database" });
     }
     finally {
-        qb.Disconnect();
+        await qb.Disconnect();
     }
 });
 
@@ -56,7 +56,7 @@ router.get(FetchTeamsByTeamNameRoute, async (req: Request, res: Response) => {
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to select teams from database" });
     }
     finally {
-        qb.Disconnect();
+        await qb.Disconnect();
     }
 });
 
@@ -84,7 +84,7 @@ router.get(FetchTeamsByTournamentIdRoute, async (req: Request, res: Response) =>
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to select teams from database" });
     }
     finally {
-        qb.Disconnect();
+        await qb.Disconnect();
     }
 });
 
@@ -109,7 +109,7 @@ router.post(PostTeamRoute, async (req: Request, res: Response) => {
         SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to update players on team from database" });
     }
     finally {
-        qb.Disconnect();
+        await qb.Disconnect();
     }
 });
 

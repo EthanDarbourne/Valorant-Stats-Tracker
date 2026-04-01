@@ -191,7 +191,7 @@ export class QueryBuilder {
             console.trace("Beginning transaction before client connected");
             throw new Error("Not connected");
         }
-        await this.pool.query("BEGIN");
+        await this.client.query("BEGIN");
     }
     
     async Connect() {
@@ -215,7 +215,7 @@ export class QueryBuilder {
             console.trace("Rollback before client connected");
             throw new Error("Not connected");
         }
-        await this.pool.query("ROLLBACK");
+        await this.client.query("ROLLBACK");
     }
 
     async Disconnect() {
@@ -242,6 +242,21 @@ export class QueryBuilder {
         catch (error) {
             console.trace(`Query: ${Quote(this.toString())}\r\nParameters: ${this.parameters}`);
             throw error;
+        }
+    }
+
+    async withTransaction<T>(fn: (qb: QueryBuilder) => Promise<T>) {
+        await this.Connect();
+        try {
+            await this.BeginTransaction();
+            const result = await fn(this);
+            await this.Commit();
+            return result;
+        } catch (e) {
+            await this.Rollback();
+            throw e;
+        } finally {
+            await this.Disconnect();
         }
     }
 }

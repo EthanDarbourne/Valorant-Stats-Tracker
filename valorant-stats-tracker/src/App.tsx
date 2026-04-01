@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import HomePage from "./HomePage";
 import AddGamePage from "./AddGamePage";
 import AddTournaments from "./AddTournamentsPage";
-import EditTournament from './EditTournamentPage';
+// import EditTournament from './EditTournamentPage';
 import EditTournamentResults from './EditTournamentResultsPage';
 import EditTeamPage from "./EditTeamPage";
 import CreateTournamentPage from "./CreateTournamentPage";
@@ -16,7 +16,7 @@ export default function App() {
       <Route path="/add-tournaments" element={<AddTournaments />} />
       <Route path="/create-tournament" element={<CreateTournamentPage />} />
       
-      <Route path="/edit-tournament/:id" element={<EditTournament />} />
+      {/* <Route path="/edit-tournament/:id" element={<EditTournament />} /> */}
       <Route path="/edit-tournament-results/:id" element={<EditTournamentResults />} />
 
 

@@ -38,12 +38,12 @@ function buildWinners(slots: (Team | null)[], isBye: boolean[]): BracketMatch[][
         const bye = isBye[i] || isBye[i + 1];
         if (bye) continue;
         r1.push({
-            id: uid("w"),
+            matchId: uid("w"),
             team1: slots[i],
             team2: slots[i + 1],
-            isBye: false,
             winnerNextMatchId: null,
             loserNextMatchId: null,
+                label: "Winner's bracket"
         });
     }
     rounds.push(r1);
@@ -60,14 +60,14 @@ function buildWinners(slots: (Team | null)[], isBye: boolean[]): BracketMatch[][
         const round: BracketMatch[] = [];
         for (let i = 0; i < prev.length; ++i) {
             const m: BracketMatch = {
-                id: uid("w"),
+                matchId: uid("w"),
                 team1: byeTeams[i],
                 team2: null,
-                isBye: false,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
+                label: "Winner's bracket"
             };
-            prev[i].winnerNextMatchId = m.id;
+            prev[i].winnerNextMatchId = m.matchId;
             round.push(m);
         }
         rounds.push(round);
@@ -78,15 +78,15 @@ function buildWinners(slots: (Team | null)[], isBye: boolean[]): BracketMatch[][
         const round: BracketMatch[] = [];
         for (let i = 0; i < prev.length; i += 2) {
             const m: BracketMatch = {
-                id: uid("w"),
+                matchId: uid("w"),
                 team1: null,
                 team2: null,
-                isBye: false,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
+                label: "Winner's bracket"
             };
-            prev[i].winnerNextMatchId = m.id;
-            prev[i + 1].winnerNextMatchId = m.id;
+            prev[i].winnerNextMatchId = m.matchId;
+            prev[i + 1].winnerNextMatchId = m.matchId;
             round.push(m);
         }
         rounds.push(round);
@@ -128,15 +128,14 @@ function buildLosers(wRounds: BracketMatch[][], bracketSize: number, byeCount: n
         }
         for(let i = 0; i < wRounds[0].length; ++i) {
             const m: BracketMatch = {
-                id: uid("l"),
+                matchId: uid("l"),
                 team1: null,
                 team2: null,
-                isBye: false,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
             };
-            wRounds[0][i].loserNextMatchId = m.id;
-            wRounds[1][i].loserNextMatchId = m.id;
+            wRounds[0][i].loserNextMatchId = m.matchId;
+            wRounds[1][i].loserNextMatchId = m.matchId;
             lr1.push(m);
         }
         lRounds.push(lr1);
@@ -144,15 +143,14 @@ function buildLosers(wRounds: BracketMatch[][], bracketSize: number, byeCount: n
         const nextRound: BracketMatch[] = [];
         for(let i = 0; i < lr1.length; i += 2) {
             const m: BracketMatch = {
-                id: uid("l"),
+                matchId: uid("l"),
                 team1: null,
                 team2: null,
-                isBye: false,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
             };
-            lr1[i].loserNextMatchId = m.id;
-            lr1[i + 1].loserNextMatchId = m.id;
+            lr1[i].loserNextMatchId = m.matchId;
+            lr1[i + 1].loserNextMatchId = m.matchId;
             nextRound.push(m);
         }
         wIdx += 2;
@@ -163,15 +161,14 @@ function buildLosers(wRounds: BracketMatch[][], bracketSize: number, byeCount: n
         const wr1Losers = wRounds[wIdx];
         for (let i = 0; i < wr1Losers.length; i += 2) {
             const m: BracketMatch = {
-                id: uid("l"),
+                matchId: uid("l"),
                 team1: null,
                 team2: null,
-                isBye: false,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
             };
-            wr1Losers[i].loserNextMatchId = m.id;
-            wr1Losers[i + 1].loserNextMatchId = m.id;
+            wr1Losers[i].loserNextMatchId = m.matchId;
+            wr1Losers[i + 1].loserNextMatchId = m.matchId;
             lr1.push(m);
         }
         wIdx++;
@@ -189,15 +186,14 @@ function buildLosers(wRounds: BracketMatch[][], bracketSize: number, byeCount: n
         const consRound: BracketMatch[] = [];
         for (let i = 0; i < prevLRound.length; i++) {
             const m: BracketMatch = {
-                id: uid("l"),
+                matchId: uid("l"),
                 team1: null,
                 team2: null,
-                isBye: false,
                 winnerNextMatchId: null,
                 loserNextMatchId: null,
             };
-            prevLRound[i].winnerNextMatchId = m.id;
-            dropIns[i].loserNextMatchId = m.id;
+            prevLRound[i].winnerNextMatchId = m.matchId;
+            dropIns[i].loserNextMatchId = m.matchId;
             consRound.push(m);
         }
         lRounds.push(consRound);
@@ -207,15 +203,14 @@ function buildLosers(wRounds: BracketMatch[][], bracketSize: number, byeCount: n
             const internalRound: BracketMatch[] = [];
             for (let i = 0; i < consRound.length; i += 2) {
                 const m: BracketMatch = {
-                    id: uid("l"),
+                    matchId: uid("l"),
                     team1: null,
                     team2: null,
-                    isBye: false,
                     winnerNextMatchId: null,
                     loserNextMatchId: null,
                 };
-                consRound[i].winnerNextMatchId = m.id;
-                consRound[i + 1].winnerNextMatchId = m.id;
+                consRound[i].winnerNextMatchId = m.matchId;
+                consRound[i + 1].winnerNextMatchId = m.matchId;
                 internalRound.push(m);
             }
             lRounds.push(internalRound);
@@ -226,6 +221,46 @@ function buildLosers(wRounds: BracketMatch[][], bracketSize: number, byeCount: n
     }
 
     return lRounds;
+}
+
+
+// Winner's bracket ends in these 3 names if applicable, and any round before that is named Upper Round X
+// where X ranges from 1-n, depending on number of rounds. If there are less than three rounds, names are
+// dropped from the left first
+// if there is a lower bracket, the grand final will be created elsewhere, otherwise, we must label the grand final here
+
+function labelAllMatches(matches: BracketMatch[], label: string, mapCount: number) {
+    matches.forEach(x => {
+        x.label = label;
+        x.mapCount = mapCount
+    });
+}
+const finalUpperRoundsMapCounts = [3,3,5,5]
+const finalUpperRounds = ["Upper Quarterfinals", "Upper Semifinals", "Upper Final", "Grand Final"]
+function labelWinnerBracket(bracket: BracketMatch[][], isLowerBracket: boolean) {
+    let wIdx = 0;
+    const rounds = bracket.length;
+    const namedRounds = isLowerBracket ? 3 : 4;
+    if (rounds > namedRounds) {
+        // start with Upper Round X
+        for(; wIdx < rounds - namedRounds; ++wIdx) {
+            labelAllMatches(bracket[wIdx], "Upper Round " + (wIdx + 1).toString(), 3)
+        }
+    }
+    const start = namedRounds - Math.min(namedRounds, rounds);
+    for(let i = start; i < namedRounds; ++i, ++wIdx) {
+        labelAllMatches(bracket[wIdx], finalUpperRounds[i], finalUpperRoundsMapCounts[i])
+    }
+}
+
+// Lower's bracket only names the final game, Lower Final, and all other rounds are named Lower Round X
+// where X ranges from 1-n, depending on number of rounds.
+function labelLowerBracket(bracket: BracketMatch[][]) {
+    const rounds = bracket.length;
+    for(let i = 0; i < rounds - 1; ++i) {
+        labelAllMatches(bracket[i], "Lower Round " + (i + 1).toString(), 3);
+    }
+    labelAllMatches(bracket[rounds - 1], "Lower Final", 5);
 }
 
 // ─── Main generator ───────────────────────────────────────────────────────────
@@ -276,6 +311,7 @@ export function generateBracket({
 
     // Build winners bracket rounds
     const wRounds = buildWinners(slots, isBye);
+    labelWinnerBracket(wRounds, format !== TournamentTypes.SingleElim);
     const wFlat = wRounds.flat();
 
     if (format === TournamentTypes.SingleElim) {
@@ -284,22 +320,23 @@ export function generateBracket({
 
     // Build losers bracket
     const lRounds = buildLosers(wRounds, bracketSize, byeCount);
+    labelLowerBracket(lRounds);
     const lFlat = lRounds.flat();
 
     // Grand final: W finalist vs L finalist
     const wFinal = wRounds[wRounds.length - 1][0];
     const lFinal = lRounds[lRounds.length - 1][0];
     const gf: BracketMatch = {
-        id: uid("gf"),
+        matchId: uid("gf"),
         team1: null,
         team2: null,
-        isBye: false,
         winnerNextMatchId: null,
         loserNextMatchId: null,
         label: "Grand Final",
+        mapCount: 5
     };
-    wFinal.winnerNextMatchId = gf.id;
-    lFinal.winnerNextMatchId = gf.id;
+    wFinal.winnerNextMatchId = gf.matchId;
+    lFinal.winnerNextMatchId = gf.matchId;
 
     return [...wFlat, ...lFlat, gf];
 }

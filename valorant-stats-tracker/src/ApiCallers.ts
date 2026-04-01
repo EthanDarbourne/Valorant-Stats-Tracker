@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute } from '../../shared/ApiRoutes';
-import { DefaultTournament, FixDates, TournamentInfo, TournamentArraySchema, EntireTournament, EntireTournamentSchema } from "../../shared/TournamentSchema";
+import { DefaultTournament, FixDates, TournamentInfo, EntireTournament, EntireTournamentSchema, TournamentInfoArraySchema } from "../../shared/TournamentSchema";
 import { GameArray, GameArraySchema } from "../../shared/GameSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
 import { PlayerArray, PlayerArraySchema } from "../../shared/PlayerSchema";
@@ -136,7 +136,7 @@ export function useTournaments() {
             return res.json();
         })
         .then((data) => {
-            const result = TournamentArraySchema.safeParse(data);
+            const result = TournamentInfoArraySchema.safeParse(data);
             if (result.success) {
                 data = result.data//FixDatesInArray(result.data);
                 setTournaments(data);

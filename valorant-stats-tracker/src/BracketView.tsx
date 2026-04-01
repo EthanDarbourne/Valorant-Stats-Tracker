@@ -6,16 +6,33 @@ import { Team } from "../../shared/TeamSchema";
 const ENABLE_CONNECTORS = true;
 
 export type BracketMatch = {
-    id: string;
+    matchId: string;
     team1: Team | null;
     team2: Team | null;
     winner?: Team | null;
     loser?: Team | null;
     winnerNextMatchId?: string | null;
     loserNextMatchId?: string | null;
-    isBye?: boolean;
     label?: string;
+    mapCount?: number,
+    playedAt?: Date
 };
+
+export function convertToTournamentMatchesTable(match: BracketMatch, tournamentId: number) {
+    return ({
+        Id: -1,
+        MatchId: match.matchId,
+        TournamentId: tournamentId,
+        Team1Id: match.team1?.Id ?? null,
+        Team2Id: match.team2?.Id ?? null,
+        WinnerId: match.winner?.Id ?? null,
+        WinnerNextMatchId: match.winnerNextMatchId ?? null,
+        LoserNextMatchId: match.loserNextMatchId ?? null,
+        Label: match.label!,
+        MapCount: match.mapCount!,
+        PlayedAt: match.playedAt ?? new Date()
+    })
+}
 
 type BracketSection = "winners" | "losers" | "grand-final";
 
@@ -44,7 +61,7 @@ const SECTION_GAP = 48;
  * Used to warn + clear when a team is moved out of a slot that has results.
  */
 function getDownstreamIds(matchId: string, matches: BracketMatch[]): string[] {
-    const byId = new Map(matches.map((m) => [m.id, m]));
+    const byId = new Map(matches.map((m) => [m.matchId, m]));
     const visited = new Set<string>();
     const queue = [matchId];
     while (queue.length) {
@@ -61,7 +78,7 @@ function getDownstreamIds(matchId: string, matches: BracketMatch[]): string[] {
 }
 
 function hasDownstreamResults(ids: string[], matches: BracketMatch[]) {
-    const byId = new Map(matches.map((m) => [m.id, m]));
+    const byId = new Map(matches.map((m) => [m.matchId, m]));
     return ids.some((id) => {
         const m = byId.get(id);
         return m && (m.team1 || m.team2 || m.winner);
@@ -69,13 +86,13 @@ function hasDownstreamResults(ids: string[], matches: BracketMatch[]) {
 }
 
 function clearDownstream(ids: string[], matches: BracketMatch[]): BracketMatch[] {
-    return matches.map((m) => (ids.includes(m.id) ? { ...m, team1: null, team2: null, winner: null, loser: null } : m));
+    return matches.map((m) => (ids.includes(m.matchId) ? { ...m, team1: null, team2: null, winner: null, loser: null } : m));
 }
 
 // ─── Layout (same as before) ──────────────────────────────────────────────────
 
 function buildAdjacency(matches: BracketMatch[]) {
-    const byId = new Map(matches.map((m) => [m.id, m]));
+    const byId = new Map(matches.map((m) => [m.matchId, m]));
     const losersIds = new Set<string>();
     for (const m of matches) {
         if (m.loserNextMatchId) losersIds.add(m.loserNextMatchId);
@@ -92,22 +109,22 @@ function assignColumns(matches: BracketMatch[], byId: Map<string, BracketMatch>)
     const cols = new Map<string, number>();
     const queue: string[] = [];
     for (const m of matches) {
-        if (!incomingWinner.has(m.id)) {
-            queue.push(m.id);
-            cols.set(m.id, 0);
+        if (!incomingWinner.has(m.matchId)) {
+            queue.push(m.matchId);
+            cols.set(m.matchId, 0);
         }
     }
     while (queue.length) {
         const n = queue.length;
-        for(let i = 0; i < n; ++i) {
+        for (let i = 0; i < n; ++i) {
             const id = queue.shift()!;
             const m = byId.get(id)!;
             const col = cols.get(id)!;
-            if(m.winnerNextMatchId != null) {
+            if (m.winnerNextMatchId != null) {
                 cols.set(m.winnerNextMatchId, col + 1);
                 queue.push(m.winnerNextMatchId);
             }
-            if(m.loserNextMatchId != null) {
+            if (m.loserNextMatchId != null) {
                 const prev = cols.get(m.loserNextMatchId) ?? col + 1;
                 cols.set(m.loserNextMatchId, prev);
                 queue.push(m.loserNextMatchId);
@@ -127,11 +144,11 @@ function classifySection(
 
     // First pass: mark grand final and known losers bracket matches
     for (const m of matches) {
-        const col = cols.get(m.id) ?? 0;
+        const col = cols.get(m.matchId) ?? 0;
         if (col === maxCol) {
-            sections.set(m.id, "grand-final");
-        } else if (losersIds.has(m.id)) {
-            sections.set(m.id, "losers");
+            sections.set(m.matchId, "grand-final");
+        } else if (losersIds.has(m.matchId)) {
+            sections.set(m.matchId, "losers");
         }
     }
 
@@ -141,11 +158,11 @@ function classifySection(
     while (changed) {
         changed = false;
         for (const m of matches) {
-            if (sections.get(m.id) === "losers") continue;
-            if (sections.get(m.id) === "grand-final") continue;
+            if (sections.get(m.matchId) === "losers") continue;
+            if (sections.get(m.matchId) === "grand-final") continue;
             const nextId = m.winnerNextMatchId;
             if (nextId && sections.get(nextId) === "losers") {
-                sections.set(m.id, "losers");
+                sections.set(m.matchId, "losers");
                 changed = true;
             }
         }
@@ -153,8 +170,8 @@ function classifySection(
 
     // Third pass: anything still unclassified is winners bracket
     for (const m of matches) {
-        if (!sections.has(m.id)) {
-            sections.set(m.id, "winners");
+        if (!sections.has(m.matchId)) {
+            sections.set(m.matchId, "winners");
         }
     }
 
@@ -172,8 +189,8 @@ function layoutMatches(matches: BracketMatch[]): LayoutMatch[] {
         "grand-final": new Map(),
     };
     for (const m of matches) {
-        const sec = sections.get(m.id)!;
-        const col = cols.get(m.id) ?? 0;
+        const sec = sections.get(m.matchId)!;
+        const col = cols.get(m.matchId) ?? 0;
         if (!grid[sec].has(col)) grid[sec].set(col, []);
         grid[sec].get(col)!.push(m);
     }
@@ -263,7 +280,6 @@ function TeamSlot({
     slot,
     matchId,
     isWinner,
-    byeRecipient,
     editMode,
     selected,
     isValidTarget,
@@ -275,7 +291,6 @@ function TeamSlot({
     slot: "team1" | "team2";
     matchId: string;
     isWinner?: boolean;
-    byeRecipient?: boolean;
     editMode: boolean;
     selected: boolean;
     isValidTarget: boolean;
@@ -333,15 +348,10 @@ function TeamSlot({
                     >
                         {team.Name}
                     </span>
-                    {byeRecipient && (
-                        <span className="text-[10px] text-gray-500 border border-gray-700 rounded px-1">BYE</span>
-                    )}
                     {isWinner && <span className="ml-auto text-xs text-red-400">✓</span>}
                 </>
             ) : (
-                <span className={`text-xs italic ${isValidTarget && editMode ? "text-blue-400" : "text-gray-600"}`}>
-                    {isValidTarget && editMode ? "Drop here" : "TBD"}
-                </span>
+                <span className="text-xs italic text-gray-600">TBD</span>
             )}
         </div>
     );
@@ -373,11 +383,12 @@ function MatchCard({
 
     const isValidTarget = (slot: "team1" | "team2") => {
         if (!editMode) return false;
-        if (!selectedSlot && !dragSourceSlot) return false;
         const sourceRef = selectedSlot ?? dragSourceSlot;
         if (!sourceRef) return false;
-        // Can't drop on itself
-        if (sourceRef.matchId === match.id && sourceRef.slot === slot) return false;
+        // Can't target itself
+        if (sourceRef.matchId === match.matchId && sourceRef.slot === slot) return false;
+        // Only allow swapping into a slot that already has a team
+        if (!match[slot]) return false;
         return true;
     };
 
@@ -407,11 +418,10 @@ function MatchCard({
                         key={slot}
                         team={match[slot]}
                         slot={slot}
-                        matchId={match.id}
+                        matchId={match.matchId}
                         isWinner={!!(match.winner && match[slot] && match.winner.Id === match[slot]!.Id)}
-                        byeRecipient={slot === "team1" && match.isBye}
                         editMode={editMode}
-                        selected={!!(selectedSlot?.matchId === match.id && selectedSlot?.slot === slot)}
+                        selected={!!(selectedSlot?.matchId === match.matchId && selectedSlot?.slot === slot)}
                         isValidTarget={isValidTarget(slot)}
                         onDragStart={onDragStart}
                         onDrop={onDrop}
@@ -426,9 +436,9 @@ function MatchCard({
 // ─── Connectors ───────────────────────────────────────────────────────────────
 
 function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW: number; totalH: number }) {
-    const byId = new Map(layout.map((m) => [m.id, m]));
+    const byId = new Map(layout.map((m) => [m.matchId, m]));
     const lines: React.ReactNode[] = [];
-    if(!ENABLE_CONNECTORS) return;
+    if (!ENABLE_CONNECTORS) return;
     for (const m of layout) {
         const srcX = m.x + CARD_W;
         const srcY = m.y + CARD_H / 2;
@@ -441,7 +451,7 @@ function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW:
                 const mx = (srcX + tgtX) / 2;
                 lines.push(
                     <path
-                        key={`w-${m.id}`}
+                        key={`w-${m.matchId}`}
                         d={`M${srcX},${srcY} C${mx},${srcY} ${mx},${tgtY} ${tgtX},${tgtY}`}
                         fill="none"
                         stroke={m.section === "grand-final" ? "#ef4444" : "#4b5563"}
@@ -459,7 +469,7 @@ function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW:
                 const mx = (srcX + tgtX) / 2;
                 lines.push(
                     <path
-                        key={`l-${m.id}`}
+                        key={`l-${m.matchId}`}
                         d={`M${srcX},${srcY} C${mx},${srcY} ${mx},${tgtY} ${tgtX},${tgtY}`}
                         fill="none"
                         stroke="#6b7280"
@@ -516,16 +526,21 @@ export function BracketView({
 
     // Perform the actual swap between two slots
     const doSwap = (from: SlotRef, to: SlotRef, clearedMatches: BracketMatch[]) => {
-        const fromMatch = clearedMatches.find((m) => m.id === from.matchId)!;
-        const toMatch = clearedMatches.find((m) => m.id === to.matchId)!;
+        const fromMatch = clearedMatches.find((m) => m.matchId === from.matchId)!;
+        const toMatch = clearedMatches.find((m) => m.matchId === to.matchId)!;
         const fromTeam = fromMatch[from.slot];
         const toTeam = toMatch[to.slot];
 
         const next = clearedMatches.map((m) => {
-            if (m.id === from.matchId) return { ...m, [from.slot]: toTeam };
-            if (m.id === to.matchId) return { ...m, [to.slot]: fromTeam };
+            if (m.matchId === from.matchId && m.matchId === to.matchId) {
+                // Both slots are in the same match — apply both changes at once
+                return { ...m, [from.slot]: toTeam, [to.slot]: fromTeam };
+            }
+            if (m.matchId === from.matchId) return { ...m, [from.slot]: toTeam };
+            if (m.matchId === to.matchId) return { ...m, [to.slot]: fromTeam };
             return m;
         });
+
         updateMatches(next);
         setSelectedSlot(null);
         dragSourceSlot.current = null;
@@ -539,11 +554,11 @@ export function BracketView({
         const toDownstream = getDownstreamIds(to.matchId, matches);
         const allDownstream = [...new Set([...fromDownstream, ...toDownstream])];
 
-        if (hasDownstreamResults(allDownstream, matches)) {
-            setPendingSwap({ from, to, downstreamIds: allDownstream });
-        } else {
-            doSwap(from, to, matches);
-        }
+        // if (hasDownstreamResults(allDownstream, matches)) {
+        //     setPendingSwap({ from, to, downstreamIds: allDownstream });
+        // } else {
+        doSwap(from, to, matches);
+        // }
     };
 
     // Drag handlers
@@ -554,20 +569,33 @@ export function BracketView({
 
     const handleDrop = (ref: SlotRef) => {
         if (!dragSourceSlot.current) return;
+        const target = matches.find((m) => m.matchId === ref.matchId);
+        if (!target?.[ref.slot]) {
+            dragSourceSlot.current = null;
+            return;
+        }
         attemptSwap(dragSourceSlot.current, ref);
         dragSourceSlot.current = null;
     };
 
     // Click-to-select handlers
     const handleSlotClick = (ref: SlotRef) => {
+        const clickedMatch = matches.find((m) => m.matchId === ref.matchId);
+        const clickedTeam = clickedMatch?.[ref.slot];
+
         if (!selectedSlot) {
-            // First click — select this slot
+            // Only select if the slot has a team
+            if (!clickedTeam) return;
             setSelectedSlot(ref);
         } else if (selectedSlot.matchId === ref.matchId && selectedSlot.slot === ref.slot) {
-            // Clicking same slot — deselect
+            // Clicking same slot deselects
             setSelectedSlot(null);
         } else {
-            // Second click — attempt swap
+            // Only swap if destination also has a team
+            if (!clickedTeam) {
+                setSelectedSlot(null);
+                return;
+            }
             attemptSwap(selectedSlot, ref);
         }
     };
@@ -628,7 +656,7 @@ export function BracketView({
 
                     {layout.map((m) => (
                         <MatchCard
-                            key={m.id}
+                            key={m.matchId}
                             match={m}
                             style={{ position: "absolute", top: m.y, left: m.x }}
                             editMode={editMode}

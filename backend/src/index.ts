@@ -3,7 +3,6 @@ import cors from 'cors';
 import mapsRouter from './routes/Maps';
 import teamsRouter from './routes/Teams';
 import tournamentsRouter from './routes/Tournaments';
-import gamesRouter from './routes/Games';
 import playersRouter from './routes/Players';
 import agentsRouter from './routes/Agents';
 
@@ -14,7 +13,6 @@ app.use(express.json());
 app.use('/', mapsRouter);
 app.use('/', teamsRouter);
 app.use('/', tournamentsRouter);
-app.use('/', gamesRouter);
 app.use('/', playersRouter);
 app.use('/', agentsRouter);
 

@@ -1,9 +1,7 @@
 import { useRef } from "react";
 import { useNavigate } from 'react-router-dom';
-import { updateTournament } from "./ApiPosters";
 import { TournamentInfo } from "../../shared/TournamentSchema";
 import { useTournaments } from "./ApiCallers";
-import { toInputDateString } from "../../shared/Helpers";
 import HomeButton from './components/ui/HomeButton';
 
 export default function TournamentsPage() {
@@ -13,20 +11,6 @@ export default function TournamentsPage() {
 
   const nextId = useRef(-1);
   const handleAddTournament = () => navigate('/create-tournament');
-//   () => {
-//     setTournaments([
-//       ...tournaments,
-//       {
-//         Id: nextId.current--,
-//         Name: "",
-//         Location: "",
-//         StartDate: toInputDateString(Date()),
-//         EndDate: toInputDateString(Date()),
-//         Completed: false,
-//         Teams: []
-//       },
-//     ]);
-//   };
 
   const [tournaments, setTournaments] = useTournaments();
 
@@ -49,7 +33,6 @@ export default function TournamentsPage() {
 
   const handleSaveTournament = async (t: TournamentInfo) => {
     console.log("Save tournament:", t);
-    t.Id = await updateTournament(t);
     console.log("Saved tournament with id:" + t.Id);
   };
 
@@ -83,12 +66,12 @@ export default function TournamentsPage() {
           <thead>
             <tr className="bg-gray-100">
               <th className="border px-4 py-2">Name</th>
+              <th className="border px-4 py-2">Format</th>
               <th className="border px-4 py-2">Location</th>
               <th className="border px-4 py-2">Start Date</th>
               <th className="border px-4 py-2">End Date</th>
               <th className="border px-4 py-2">Completed</th>
-              <th className="border px-4 py-2">Edit Teams</th>
-              <th className="border px-4 py-2">Edit Placements</th>
+              <th className="border px-4 py-2">Edit Tournament</th>
               <th className="border px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -106,6 +89,14 @@ export default function TournamentsPage() {
                 <td className="border px-2 py-1">
                   <input
                     type="text"
+                    value={t.Format}
+                    onChange={(e) => handleChange(t.Id, "Format", e.target.value)}
+                    className="border rounded p-1 w-full"
+                  />
+                </td>
+                <td className="border px-2 py-1">
+                  <input
+                    type="text"
                     value={t.Location}
                     onChange={(e) => handleChange(t.Id, "Location", e.target.value)}
                     className="border rounded p-1 w-full"
@@ -114,7 +105,7 @@ export default function TournamentsPage() {
                 <td className="border px-2 py-1">
                   <input
                     type="date"
-                    value={t.StartDate}
+                    value={t.StartDate?.toISOString()}
                     onChange={(e) => handleChange(t.Id, "StartDate", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
@@ -122,7 +113,7 @@ export default function TournamentsPage() {
                 <td className="border px-2 py-1">
                   <input
                     type="date"
-                    value={t.EndDate}
+                    value={t.EndDate?.toISOString()}
                     onChange={(e) => handleChange(t.Id, "EndDate", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
@@ -136,12 +127,7 @@ export default function TournamentsPage() {
                 </td>
                 <td className="border px-2 py-1 text-center">
                     <button disabled={t.Id < 0} onClick={() => navigate(`/edit-tournament/${t.Id}`)}> {/* */}
-                    Edit Teams
-                    </button>
-                </td>
-                <td className="border px-2 py-1 text-center">
-                    <button disabled={t.Id < 0} onClick={() => navigate(`/edit-tournament-results/${t.Id}`)}> {/* */}
-                    Edit Placements
+                    Edit Tournament
                     </button>
                 </td>
                 <td className="border px-2 py-1 text-center space-x-2">

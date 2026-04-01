@@ -3,21 +3,47 @@ import { makeColumnMap } from "./MakeCol";
 import { QueryBuilder } from "../QueryBuilder";
 import { SQLComparator } from "../Helpers";
 import { FixDates } from "../../../shared/TournamentSchema";
+import { TournamentMatchesTableSchema } from "./TournamentMatchesTable";
 
 export const TournamentsTableSchema = z.object({
   Id: z.number(),
   Name: z.string(),
+  Format: z.string(),
   Location: z.string(),
-  StartDate: z.string(),
-  EndDate: z.string(),
+  StartDate: z.coerce.date().nullable(),
+  EndDate: z.coerce.date().nullable(),
   Completed: z.boolean(),
   Winner: z.number().nullable(),
 });
+
+export const TeamInfoSchema = z.object({
+    TeamId: z.number(),
+    TeamName: z.string(),
+    Placement: z.number().nullable()
+})
+
+export const EntireTournamentSchema = z.object({
+    Id: z.number(),
+    Name: z.string(),
+    Format: z.string(),
+    Location: z.string(),
+    StartDate: z.coerce.date().nullable(),
+    EndDate: z.coerce.date().nullable(),
+    Completed: z.boolean(),
+    Winner: z.number().nullable(),
+    Matches: z.array(TournamentMatchesTableSchema),
+    Placements: z.array(TeamInfoSchema)
+})
+
+export type EntireTournament = z.infer<typeof EntireTournamentSchema>;
+
+export type TeamInfo = z.infer<typeof TeamInfoSchema>;
 
 export const TournamentRowArraySchema = z.array(TournamentsTableSchema);
 
 export type TournamentRow = z.infer<typeof TournamentsTableSchema>;
 export type TournamentRowArray = z.infer<typeof TournamentRowArraySchema>;
+
 export const TournamentColumns = makeColumnMap(TournamentsTableSchema);
 
 export const TournamentsTableName = "Tournaments";

@@ -4,7 +4,6 @@ import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST, RESPONSE_INTERNAL_ERR
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
 import { FetchMapsRoute, PostTournamentMap } from '../../../shared/ApiRoutes';
-import { TournamentGameRow, UpdateTournamentGame } from '../TableSchemas/TournamentGamesTable';
 import { RoundEventRow, InsertRoundEvents } from '../TableSchemas/RoundEventsTable';
 import { RoundRow, InsertRounds } from '../TableSchemas/RoundsTable';
 import { PlayerStats, TournamentMap, TournamentMapSchema } from '../../../shared/EntireGameSchema';
@@ -111,7 +110,7 @@ router.post(PostTournamentMap, async (req: Request, res: Response) => {
         await qb.Rollback();
     }
     finally {
-        qb.Disconnect();
+        await qb.Disconnect();
     }
 });
 

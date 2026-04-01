@@ -30,6 +30,16 @@ export async function InsertTournamentResult(qb: QueryBuilder, result: Tournamen
     await qb.Execute();
 }
 
+export async function InsertAllTournamentResult(qb: QueryBuilder, results: TournamentResultRow[]) {
+    qb.Insert(TournamentResultsName, Object.keys(TournamentResultColumns));
+
+    results.forEach(result => {
+        qb.AddValue(Object.values(result))
+    });
+    
+    await qb.Execute();
+}
+
 export async function GetTeamsByTournamentId(qb: QueryBuilder, tournamentId: number): Promise<TournamentResultRow[]> {
     qb.SelectAll()
         .From(TournamentResultsName)

@@ -1,40 +1,21 @@
 import { toInputDateString } from "./Helpers";
 import { z } from "zod";
-import { TournamentResultSchema } from "./TournamentResultsSchema";
+import { TournamentsTableSchema, TournamentRow, TournamentRowArraySchema, EntireTournamentSchema as EntireTournamentSchemaCopy, EntireTournament as EntireTournamentCopy } from "../backend/src/TableSchemas/TournamentsTable"
 
-export const TeamInfoSchema = z.object({
-    Id: z.number(),
-    Name: z.string(),
-    Placement: z.number().nullable()
-})
 
-export const TournamentInfoSchema = z.object({
-    Id: z.number(),
-    Name: z.string(),
-    Location: z.string(),
-    StartDate: z.string(),
-    EndDate: z.string(),
-    Completed: z.boolean(),
-    Teams: z.array(TeamInfoSchema).optional().default([]),
-});
+export const TournamentInfoSchema = TournamentsTableSchema;
+export type TournamentInfo = TournamentRow;
 
-export const EntireTournamentSchema = z.object({
-    Id: z.number(),
-    Name: z.string(),
-    Location: z.string(),
-    StartDate: z.string(),
-    EndDate: z.string(),
-    Completed: z.boolean(),
-    Teams: z.array(TournamentResultSchema).optional().default([])
-})
+export const EntireTournamentSchema = EntireTournamentSchemaCopy;
+export type EntireTournament = EntireTournamentCopy;
+// export const EntireTournamentScshema = EntireTournamentSchema;
 
-export type EntireTournament = z.infer<typeof EntireTournamentSchema>;
+// export type EntireTournament = z.infer<typeof EntireTournamentSchema>;
+export const TournamentInfoArraySchema = TournamentRowArraySchema;
 
-export const TournamentArraySchema = z.array(TournamentInfoSchema);
-
-export type TeamInfo = z.infer<typeof TeamInfoSchema>;
-export type TournamentInfo = z.infer<typeof TournamentInfoSchema>;
-export type TournamentArray = z.infer<typeof TournamentArraySchema>;
+// export type TeamInfo = z.infer<typeof TeamInfoSchema>;
+// export type TournamentInfo = z.infer<typeof TournamentInfoSchema>;
+// export type TournamentArray = z.infer<typeof TournamentArraySchema>;
 
 export function FixDates(data: any) {
   return ({...data,
@@ -54,9 +35,12 @@ export function FixDatesInArray(data: any[]) {
 export const DefaultTournament = {       
     Id: -1,
     Name: "",
+    Format: "",
     Location: "",
-    StartDate: "",
-    EndDate: "",
+    StartDate: null,
+    EndDate: null,
     Completed: false,
-    Teams: []
+    Winner: null,
+    Placements: [],
+    Matches: []
 }
