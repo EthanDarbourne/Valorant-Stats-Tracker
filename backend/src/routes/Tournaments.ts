@@ -4,7 +4,7 @@ import pool from '../db';
 import { MakeCallWithDatabaseResult, RESPONSE_CREATED, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { QueryBuilder } from '../QueryBuilder';
 import { SelectTeamIdsByName, TeamIdentity } from '../TableSchemas/TeamsTable';
-import { DeleteAllTournamentMatches, InsertTournamentMatches, SelectMatchesByTournamentId, TournamentMatchesArraySchema } from '../TableSchemas/TournamentMatchesTable';
+import { DeleteAllTournamentMatches, InsertTournamentMatches, SelectMatchesByTournamentId } from '../TableSchemas/TournamentMatchesTable';
 import { DeleteResultsForTournamentId, InsertAllTournamentResult, InsertTournamentResult, GetTeamsByTournamentId as SelectPlacementsByTournamentId } from '../TableSchemas/TournamentResultsTable';
 import { DeleteTournament, EntireTournamentSchema, GetAllTournaments, GetTournamentById, InsertTournament, TeamInfo } from '../TableSchemas/TournamentsTable';
 
@@ -69,7 +69,7 @@ router.post(PostTournamentRoute, async (req: Request, res: Response) => {
 
         // save all placements
         console.log(Placements);
-        const resultRows = Placements.map(x => ({TournamentId: tournamentId, TeamId: x.TeamId, Placement: x.Placement }));
+        const resultRows = Placements.map(x => ({TournamentId: tournamentId, TeamId: x.TeamId, Placement: x.Placement, Seed: x.Seed }));
         await InsertAllTournamentResult(qb, resultRows);
 
         // save all matches
@@ -105,7 +105,8 @@ async function UpdateTournamentResults(qb: QueryBuilder, tournamentId: number, t
         await InsertTournamentResult(qb, {
             TournamentId: tournamentId,
             TeamId: team.TeamId,
-            Placement: team.Placement
+            Placement: team.Placement,
+            Seed: null
         });
     }
 

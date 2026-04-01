@@ -19,8 +19,9 @@ export const TournamentsTableSchema = z.object({
 export const TeamInfoSchema = z.object({
     TeamId: z.number(),
     TeamName: z.string(),
-    Placement: z.number().nullable()
-})
+    Placement: z.number().nullable(),
+    Seed: z.number().nullable()
+});
 
 export const EntireTournamentSchema = z.object({
     Id: z.number(),

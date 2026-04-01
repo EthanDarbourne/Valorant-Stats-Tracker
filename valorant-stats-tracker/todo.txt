@@ -18,6 +18,9 @@ Button for who picked map
 Help dialog for shortcuts
 Add formData verification and more errors (Stats etc.)
 
+CreateTournamentPage:
+Use skippedSteps array to skip steps
+Be able to set 4 first seeds as at some internationals.
 
 AddTournamentsPage:
 Make home button visible on AddTournamentsPage

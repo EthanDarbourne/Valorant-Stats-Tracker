@@ -923,7 +923,7 @@ export default function CreateTournamentPage() {
     const [format, setFormat] = useState<TournamentTypes>(TournamentTypes.DoubleElim);
     const [teamCount, setTeamCount] = useState(8);
     const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-    const [seeds, setSeeds] = useState<(Team | null)[]>(Array(teamCount).fill(null));
+    const [seeds, setSeeds] = useState<(Team | null)[]>([]);
     const [groups, setGroups] = useState<Team[][]>([]);
     const [matches, setMatches] = useState<BracketMatch[]>([]);
     const [saving, setSaving] = useState(false);
@@ -946,21 +946,7 @@ export default function CreateTournamentPage() {
 
     const handleNext = () => {
         let nextStep = step + 1;
-        // if (step === 3) {
 
-        //   // Generate initial bracket
-        //   const seededTeams = seeds.filter((s): s is Team => s !== null);
-        //   let generated: TournamentMatchNode[] = [];
-        // //   if (isStageTournament(format)) {
-        // //     generated = generateGroupStage(seededTeams);
-        // //   }
-        // // else if (format === "swiss") {
-        // //     generated = generateSwissRound(seededTeams, [], 1);
-        // //   } else if (format === "group_stage") {
-        // //     generated = generateGroupStage(seededTeams);
-        // //   }
-        //   setMatches(generated);
-        // }
         if (step === 1) {
             setSeeds(Array(teamCount).fill(null));
         }
@@ -1015,10 +1001,12 @@ export default function CreateTournamentPage() {
             console.log("Make sure to set both dates");
             return;
         }
+        if(seeds.some(x => x == null)) {
+            console.log("Make sure all seeds are properly set");
+            return;
+        }
         setSaving(true);
         try {
-            // TODO: replace with your actual API call
-            // await createTournament({ name, format, teamCount, seeds, matches });
             // Saving Tournament:
             //  - Need to create tournament in Tournaments Table
             //  - Need to create a game for each game in the tournament
@@ -1030,6 +1018,11 @@ export default function CreateTournamentPage() {
                 if (x.loserNextMatchId) x.loserNextMatchId = prefix + x.loserNextMatchId;
                 if (x.winnerNextMatchId) x.winnerNextMatchId = prefix + x.winnerNextMatchId;
             });
+
+            const findSeed = (id: number) => {
+                const idx = seeds.findIndex(y => y!.Id == id);
+                return idx == null ? idx : idx + 1;
+            }
             const entireTournament: EntireTournament = {
                 Id: -1,
                 Name: name,
@@ -1039,8 +1032,8 @@ export default function CreateTournamentPage() {
                 StartDate: startDate,
                 EndDate: endDate,
                 Winner: null,
-                Placements: teams.map((x) => ({ TeamId: x.Id, TeamName: x.Name, Placement: null })),
-                Matches: matches.map(convertToTournamentMatchesTable)
+                Placements: teams.map((x) => ({ TeamId: x.Id, TeamName: x.Name, Placement: null, Seed: findSeed(x.Id) })),
+                Matches: matches.map(convertToTournamentMatchesTable),
             };
             const response = await createTournament(entireTournament);
             console.log("Saved tournament:", response);

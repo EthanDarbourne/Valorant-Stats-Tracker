@@ -6,7 +6,8 @@ import { SQLComparator } from "../Helpers";
 export const TournamentResultsTableSchema = z.object({
   TournamentId: z.number(),
   TeamId: z.number(),
-  Placement: z.number().nullable()
+  Placement: z.number().nullable(),
+  Seed: z.number().nullable()
 })
 
 export type TournamentResultRow = z.infer<typeof TournamentResultsTableSchema>;
@@ -16,7 +17,7 @@ export const TournamentResultsName = "TournamentResults";
 
 export async function UpdatePlacement(qb: QueryBuilder, result: TournamentResultRow) {
     qb.Update(TournamentResultsName)
-        .Set([[TournamentResultColumns.Placement, result.Placement]])
+        .Set([[TournamentResultColumns.Placement, result.Placement], [TournamentResultColumns.Seed, result.Seed]])
         .Where([[TournamentResultColumns.TournamentId, SQLComparator.EQUAL, result.TournamentId],
                 [TournamentResultColumns.TeamId, SQLComparator.EQUAL, result.TeamId]])
 
