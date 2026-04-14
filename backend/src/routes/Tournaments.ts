@@ -6,7 +6,7 @@ import { QueryBuilder } from '../QueryBuilder';
 import { SelectTeamIdsByName, TeamIdentity } from '../TableSchemas/TeamsTable';
 import { DeleteAllTournamentMatches, InsertTournamentMatches, SelectMatchesByTournamentId } from '../TableSchemas/TournamentMatchesTable';
 import { DeleteResultsForTournamentId, InsertAllTournamentResult, InsertTournamentResult, GetTeamsByTournamentId as SelectPlacementsByTournamentId } from '../TableSchemas/TournamentResultsTable';
-import { DeleteTournament, EntireTournamentSchema, GetAllTournaments, GetTournamentById, InsertTournament, TeamInfo } from '../TableSchemas/TournamentsTable';
+import { DeleteTournament, EntireTournament, EntireTournamentSchema, GetAllTournaments, GetTournamentById, InsertTournament, TeamInfo } from '../TableSchemas/TournamentsTable';
 
 const router = Router();
 
@@ -33,10 +33,10 @@ router.get(FetchTournamentByIdRoute, async (req: Request, res: Response) => {
         
         const tournamentMatches = await SelectMatchesByTournamentId(qb, tournamentId);
         const placements = await SelectPlacementsByTournamentId(qb, tournamentId);
-        const fullTournament = {
+        const fullTournament: EntireTournament = {
             ...tournament,
             Matches: tournamentMatches,
-            Placements: placements
+            Placements: placements.map(x => ({ TeamId: x.TeamId, Placement: x.Placement, Seed: x.Seed }))
         };
         
         const parsed = EntireTournamentSchema.safeParse(fullTournament);
@@ -90,28 +90,28 @@ router.post(PostTournamentRoute, async (req: Request, res: Response) => {
 });
 
 
-async function UpdateTournamentResults(qb: QueryBuilder, tournamentId: number, teamPlacements: TeamInfo[]): Promise<void> {
-      if (!Number.isInteger(tournamentId)) {
-        throw new Error("Invalid TournamentId");
-    }
+// async function UpdateTournamentResults(qb: QueryBuilder, tournamentId: number, teamPlacements: TeamInfo[]): Promise<void> {
+//       if (!Number.isInteger(tournamentId)) {
+//         throw new Error("Invalid TournamentId");
+//     }
 
-    // Step 1: Delete previous results
-    await DeleteResultsForTournamentId(qb, tournamentId);
+    // // Step 1: Delete previous results
+    // await DeleteResultsForTournamentId(qb, tournamentId);
 
-    // Step 2: Insert new results
-    const teams = await SelectTeamIdsByName(qb, teamPlacements.map(x => x.TeamName));
+    // // Step 2: Insert new results
+    // const teams = await SelectTeamIdsByName(qb, teamPlacements.map(x => x.TeamName));
 
-    for (const team of teamPlacements) {
-        await InsertTournamentResult(qb, {
-            TournamentId: tournamentId,
-            TeamId: team.TeamId,
-            Placement: team.Placement,
-            Seed: null
-        });
-    }
+    // for (const team of teamPlacements) {
+    //     await InsertTournamentResult(qb, {
+    //         TournamentId: tournamentId,
+    //         TeamId: team.TeamId,
+    //         Placement: team.Placement,
+    //         Seed: null
+    //     });
+    // }
 
-    console.log(`TournamentResults updated for TournamentId ${tournamentId}`);
-}
+    // console.log(`TournamentResults updated for TournamentId ${tournamentId}`);
+// }
 
 // we assume that any missing ids are for games that are already handled
 function MapTeamNamesToIdsIfExist(names: string[], identities: TeamIdentity[]): number[] {

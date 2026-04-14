@@ -1021,7 +1021,7 @@ export default function CreateTournamentPage() {
 
             const findSeed = (id: number) => {
                 const idx = seeds.findIndex(y => y!.Id == id);
-                return idx == null ? idx : idx + 1;
+                return idx == -1 ? null : idx + 1;
             }
             const entireTournament: EntireTournament = {
                 Id: -1,

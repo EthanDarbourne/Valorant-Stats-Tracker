@@ -57,6 +57,11 @@ export class QueryBuilder {
         return this;
     }
 
+    // todo: implement ON UPDATE AND 
+    OnConflict(conflictColumns: string[], conflictResolution: ConflictResolution) {
+        this.append("ON CONFLICT (" + QuoteAll(conflictColumns) + ")" + conflictResolution)
+    }
+
     AddValue(row: any[]) {
         if(this.insertCount > 0) this.append(", ");
         this.append('(' + row.map(() => this.GetParameterString()).join(", ") + ')')
@@ -263,3 +268,4 @@ export class QueryBuilder {
 
 type Parameter = [ColumnIdentifier, any]
 type WhereClause = [ColumnIdentifier, SQLComparator, any]; // column to compare to, comparator, parameter
+type ConflictResolution = "DO NOTHING" | "DO UPDATE"

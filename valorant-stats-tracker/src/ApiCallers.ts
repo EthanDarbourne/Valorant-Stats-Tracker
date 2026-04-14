@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute } from '../../shared/ApiRoutes';
-import { DefaultTournament, FixDates, TournamentInfo, EntireTournament, EntireTournamentSchema, TournamentInfoArraySchema } from "../../shared/TournamentSchema";
+import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags } from '../../shared/ApiRoutes';
+import { DefaultTournament, TournamentInfo, EntireTournament, EntireTournamentSchema, TournamentInfoArraySchema } from "../../shared/TournamentSchema";
 import { GameArray, GameArraySchema } from "../../shared/GameSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
 import { PlayerArray, PlayerArraySchema } from "../../shared/PlayerSchema";
 import { PORT, Regions } from "./Constants";
+import { Note, Tag } from "../../shared/NotesSchema";
+import { TagCategory } from "./ValorantNotesPage";
 
 export function useMaps() {
     const [maps, setMaps] = useState<string[]>([]);
@@ -105,7 +107,7 @@ export function useTeamsByTournamentId(tournamentId: number) {
         .catch((err) => console.error(err))
     }, [tournamentId]);
 
-    return [teams, setTeams] as const;
+    return teams;
 }
 
 export function useTeamsByTeamName(teamNames: string[]) {
@@ -162,8 +164,8 @@ export function useTournamentById(id: number) {
         .then((data) => {
             const result = EntireTournamentSchema.safeParse(data);
             if (result.success) {
-                data = FixDates(result.data);
-                setTournament(data);
+                // data = FixDates(result.data);
+                setTournament(result.data);
             } else {
                 console.error("Validation failed:", result.error);
             }
@@ -234,4 +236,67 @@ export function useAgentsByRole(role: string) {
     }, [role]);
 
     return agents;
+}
+
+export function useNotes() {
+    const [notes, setNotes] = useState<Note[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAllNotes}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch notes");
+            return res.json();
+        })
+        .then((data) => {
+            setNotes(data);
+        })
+        .catch((err) => console.error(err))
+    }, []);
+
+    return [notes, setNotes] as const;
+}
+
+export function useTags() {
+    const [tags, setTags] = useState<Tag[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAllTags}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch tags");
+            return res.json();
+        })
+        .then((data) => {
+            setTags(data);
+        })
+        .catch((err) => console.error(err))
+    }, []);
+
+    return [tags, setTags] as const;
+}
+
+export function useTagsByCategory() {
+    const [tags, setTags] = useState<TagCategory[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAllTags}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch tags");
+            return res.json();
+        })
+        .then((data: Tag[]) => {
+            const grouped = data.reduce((acc, { Category, Name }) => {
+                (acc[Category] ||= []).push(Name);
+                return acc;
+            }, {} as Record<string, string[]>);
+
+            const groupedTags = Object.entries(grouped).map(([Category, Tags]) => ({
+                Category,
+                Tags
+            }));
+            setTags(groupedTags);
+        })
+        .catch((err) => console.error(err))
+    }, []);
+
+    return [tags, setTags] as const;
 }

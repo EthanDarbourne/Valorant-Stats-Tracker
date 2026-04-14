@@ -4,7 +4,7 @@ import { TournamentInfo } from "../../shared/TournamentSchema";
 import { useTournaments } from "./ApiCallers";
 import HomeButton from './components/ui/HomeButton';
 
-export default function TournamentsPage() {
+export default function ViewTournamentsPage() {
 
     // inside your component
     const navigate = useNavigate();
@@ -13,6 +13,7 @@ export default function TournamentsPage() {
   const handleAddTournament = () => navigate('/create-tournament');
 
   const [tournaments, setTournaments] = useTournaments();
+  console.log(tournaments)
 
   const handleRemoveTournament = (id: number) => {
     console.log("Delete tournament:", id);
@@ -105,7 +106,7 @@ export default function TournamentsPage() {
                 <td className="border px-2 py-1">
                   <input
                     type="date"
-                    value={t.StartDate?.toISOString()}
+                    value={t.StartDate?.toISOString().split('T')[0]}
                     onChange={(e) => handleChange(t.Id, "StartDate", e.target.value)}
                     className="border rounded p-1 w-full"
                   />
@@ -113,7 +114,7 @@ export default function TournamentsPage() {
                 <td className="border px-2 py-1">
                   <input
                     type="date"
-                    value={t.EndDate?.toISOString()}
+                    value={t.EndDate?.toISOString().split('T')[0]}
                     onChange={(e) => handleChange(t.Id, "EndDate", e.target.value)}
                     className="border rounded p-1 w-full"
                   />

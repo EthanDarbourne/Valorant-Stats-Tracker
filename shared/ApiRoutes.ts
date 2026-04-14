@@ -7,6 +7,11 @@ export const FetchMapsRoute = "/api/maps"
 
 // URL parameters: None
 // Request Body: None
+// Returns: Array(string)
+export const FetchAllMapsRoute = "/api/allMaps"
+
+// URL parameters: None
+// Request Body: None
 // Returns: TournamentArray
 export const FetchAllTournamentsRoute = "/api/tournaments"
 
@@ -83,7 +88,7 @@ export const FetchAgentsRoute = "/api/agents"
 // URL parameters: Role
 // Request Body: None
 // Returns: AgentArray
-export const FetchAgentsByRoleRoute = "/api/agents"
+export const FetchAgentsByRoleRoute = "/api/agentsByRole"
 
 // URL parameters: None
 // Request Body: TournamentMap
@@ -94,3 +99,23 @@ export const PostTournamentMap = "/api/saveTournamentMap"
 // Request Body: OtherMap
 // Returns: None
 export const PostOtherMap = "/api/saveOtherMap"
+
+// URL parameters: None
+// Request Body: None
+// Returns: NoteArray
+export const FetchAllNotes = "/api/notes"
+
+// URL parameters: NoteArray
+// Request Body: None
+// Returns: None
+export const PostNotes = "/api/saveNotes"
+
+// URL parameters: None
+// Request Body: None
+// Returns: TagArray
+export const FetchAllTags = "/api/tags"
+
+// URL parameters: TagArray
+// Request Body: None
+// Returns: None
+export const PostTags = "/api/saveTags"

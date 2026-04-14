@@ -3,7 +3,7 @@ import { GetMapsList } from '../TableSchemas/MapsTable';
 import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
-import { FetchMapsRoute, PostTournamentMap } from '../../../shared/ApiRoutes';
+import { FetchAllMapsRoute, FetchMapsRoute, PostTournamentMap } from '../../../shared/ApiRoutes';
 import { RoundEventRow, InsertRoundEvents } from '../TableSchemas/RoundEventsTable';
 import { RoundRow, InsertRounds } from '../TableSchemas/RoundsTable';
 import { PlayerStats, TournamentMap, TournamentMapSchema } from '../../../shared/EntireGameSchema';
@@ -15,6 +15,11 @@ const router = Router();
 router.get(FetchMapsRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     await MakeCallWithDatabaseResult(async () => await GetMapsList(qb), res, "GetMapsList");
+});
+
+router.get(FetchAllMapsRoute, async (req: Request, res: Response) => {
+    const qb = new QueryBuilder(pool);
+    await MakeCallWithDatabaseResult(async () => await GetMapsList(qb), res, "GetAllMaps");
 });
 
 router.post(PostTournamentMap, async (req: Request, res: Response) => {

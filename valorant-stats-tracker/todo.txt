@@ -1,5 +1,5 @@
 Current:
-
+Create a generic for basic apicaller functions
 
 
 AddGamePage:
@@ -46,6 +46,8 @@ HomePage:
 Add fun info like upcoming/recent games previews
 stats on total data collected
 
+NotesPage:
+Remove unnecessary scroll bars
 
 All Pages:
 Banner for failed requests with a retry option?
@@ -64,7 +66,10 @@ Make sure all functions on a table specify return type
 Figure out a way for strict typing the QueryBuilder.AddValues function (generic + Object.values() ???)
 Wrapper for all api routes that provides a querybuilder to a function and does all try/catch/finally and setresponse on error
 Use extractValuesInSchemaOrder where needed
-
+Querybuilder sets selectcount to 1000 in selectall, find better way to do this (block other selects) etc
+Also need to reset this for nested queries.
+MakeCallWithDatabaseResult function parameter, use nameof(ROUTE)
+Possible to rollback before connected if schema parsing fails.
 
 Database:
 Rename all Team1/Team2 to TeamA/TeamB
@@ -99,3 +104,16 @@ Swiss Stage - x teams skip swiss stage (seeded), generate swiss matches then emp
 Double Elim - generate bracket. for 12 teams, 4 teams get byes
 
 Need to figure out how teams are supposed to drop in brackets.
+
+
+
+Notes Page:
+Page to take notes on how to play certain situations
+NoSQL database? Store as keywords,tags,paragraph,header,question etc
+Dialog pop up to select tags, show circles with broad tags, and then sub tags inside the circle, select the one you want.
+Pop up multiple choice how to play situations
+Base correctness on collected data
+
+
+
+Expected stat line given map score: 10/14 is ok in a 13-6 loss

@@ -9,9 +9,12 @@ import {
     PostTournamentMap,
     PostOtherMap,
     PostTournamentRoute,
+    PostTags,
+    PostNotes,
 } from "../../shared/ApiRoutes";
 import { Team } from "../../shared/TeamSchema";
 import { Player } from "../../shared/PlayerSchema";
+import { Note, Tag } from "../../shared/NotesSchema";
 
 export async function createTournament(tournament: EntireTournament) {
     const parsed = EntireTournamentSchema.safeParse(tournament);
@@ -116,6 +119,40 @@ export async function updateOtherGame(game: OtherMap) {
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to post other game: ${response.status} ${errorText}`);
+    }
+
+    return response;
+}
+
+export async function saveNotes(notes: Note[]) {
+    const response = await fetch(`http://localhost:${PORT}${PostNotes}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(notes),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to post notes: ${response.status} ${errorText}`);
+    }
+
+    return response;
+}
+
+export async function saveTags(tags: Tag[]) {
+    const response = await fetch(`http://localhost:${PORT}${PostTags}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tags),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to post tags: ${response.status} ${errorText}`);
     }
 
     return response;

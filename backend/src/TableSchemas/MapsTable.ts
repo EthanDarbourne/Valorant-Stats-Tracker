@@ -24,3 +24,12 @@ export async function GetMapsList(qb: QueryBuilder): Promise<string[]> {
   const result = await qb.Execute();
   return result.rows;
 }
+
+export async function GetAllMaps(qb: QueryBuilder): Promise<string[]> {
+
+  qb.Select().Selectable(MapsColumns.Name)
+    .From(MapsTableName);
+  
+  const result = await qb.Execute();
+  return result.rows;
+}

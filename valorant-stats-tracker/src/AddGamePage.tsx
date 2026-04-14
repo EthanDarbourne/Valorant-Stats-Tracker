@@ -82,7 +82,7 @@ export default function AddGamePage() {
   const [isGameInDatabase, setGameInDatabase] = useState<boolean>(false);
   
   const [tournaments, _] = useTournaments();
-  const [teams] = useTeamsByTournamentId(tournament.Id);
+  const teams = useTeamsByTournamentId(tournament.Id);
   
   const navigate = useNavigate();
   const { addGame } = useGameContext();

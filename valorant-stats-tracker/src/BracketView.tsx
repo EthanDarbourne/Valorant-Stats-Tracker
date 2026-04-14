@@ -1,6 +1,7 @@
 // ─── Types (unchanged) ───────────────────────────────────────────────────────
 
 import { useState, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Team } from "../../shared/TeamSchema";
 
 const ENABLE_CONNECTORS = true;
@@ -14,12 +15,12 @@ export type BracketMatch = {
     winnerNextMatchId?: string | null;
     loserNextMatchId?: string | null;
     label?: string;
-    mapCount?: number,
-    playedAt?: Date
+    mapCount?: number;
+    playedAt?: Date;
 };
 
 export function convertToTournamentMatchesTable(match: BracketMatch, tournamentId: number) {
-    return ({
+    return {
         Id: -1,
         MatchId: match.matchId,
         TournamentId: tournamentId,
@@ -30,8 +31,8 @@ export function convertToTournamentMatchesTable(match: BracketMatch, tournamentI
         LoserNextMatchId: match.loserNextMatchId ?? null,
         Label: match.label!,
         MapCount: match.mapCount!,
-        PlayedAt: match.playedAt ?? new Date()
-    })
+        PlayedAt: match.playedAt ?? new Date(),
+    };
 }
 
 type BracketSection = "winners" | "losers" | "grand-final";
@@ -45,6 +46,7 @@ type LayoutMatch = BracketMatch & {
 };
 
 type SlotRef = { matchId: string; slot: "team1" | "team2" };
+type BracketMode = "view" | "edit" | "progress";
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -56,10 +58,6 @@ const SECTION_GAP = 48;
 
 // ─── Downstream clearing ──────────────────────────────────────────────────────
 
-/**
- * Collect all match IDs downstream of a given slot.
- * Used to warn + clear when a team is moved out of a slot that has results.
- */
 function getDownstreamIds(matchId: string, matches: BracketMatch[]): string[] {
     const byId = new Map(matches.map((m) => [m.matchId, m]));
     const visited = new Set<string>();
@@ -73,7 +71,7 @@ function getDownstreamIds(matchId: string, matches: BracketMatch[]): string[] {
         if (m.winnerNextMatchId) queue.push(m.winnerNextMatchId);
         if (m.loserNextMatchId) queue.push(m.loserNextMatchId);
     }
-    visited.delete(matchId); // don't clear the match itself
+    visited.delete(matchId);
     return [...visited];
 }
 
@@ -86,10 +84,12 @@ function hasDownstreamResults(ids: string[], matches: BracketMatch[]) {
 }
 
 function clearDownstream(ids: string[], matches: BracketMatch[]): BracketMatch[] {
-    return matches.map((m) => (ids.includes(m.matchId) ? { ...m, team1: null, team2: null, winner: null, loser: null } : m));
+    return matches.map((m) =>
+        ids.includes(m.matchId) ? { ...m, team1: null, team2: null, winner: null, loser: null } : m,
+    );
 }
 
-// ─── Layout (same as before) ──────────────────────────────────────────────────
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 function buildAdjacency(matches: BracketMatch[]) {
     const byId = new Map(matches.map((m) => [m.matchId, m]));
@@ -142,18 +142,12 @@ function classifySection(
     const maxCol = Math.max(...[...cols.values()]);
     const sections = new Map<string, BracketSection>();
 
-    // First pass: mark grand final and known losers bracket matches
     for (const m of matches) {
         const col = cols.get(m.matchId) ?? 0;
-        if (col === maxCol) {
-            sections.set(m.matchId, "grand-final");
-        } else if (losersIds.has(m.matchId)) {
-            sections.set(m.matchId, "losers");
-        }
+        if (col === maxCol) sections.set(m.matchId, "grand-final");
+        else if (losersIds.has(m.matchId)) sections.set(m.matchId, "losers");
     }
 
-    // Second pass: propagate losers classification forward through winnerNextMatchId chains.
-    // A match whose winnerNextMatchId points to a losers match is itself a losers match.
     let changed = true;
     while (changed) {
         changed = false;
@@ -168,11 +162,8 @@ function classifySection(
         }
     }
 
-    // Third pass: anything still unclassified is winners bracket
     for (const m of matches) {
-        if (!sections.has(m.matchId)) {
-            sections.set(m.matchId, "winners");
-        }
+        if (!sections.has(m.matchId)) sections.set(m.matchId, "winners");
     }
 
     return sections;
@@ -204,14 +195,7 @@ function layoutMatches(matches: BracketMatch[]): LayoutMatch[] {
         for (const col of sortedCols) {
             const ms = secGrid.get(col)!;
             ms.forEach((m, row) => {
-                layout.push({
-                    ...m,
-                    col,
-                    row,
-                    section: sec,
-                    x: xBase + col * colW,
-                    y: yBase + row * (CARD_H + ROW_GAP),
-                });
+                layout.push({ ...m, col, row, section: sec, x: xBase + col * colW, y: yBase + row * (CARD_H + ROW_GAP) });
             });
         }
     };
@@ -229,10 +213,7 @@ function layoutMatches(matches: BracketMatch[]): LayoutMatch[] {
     const gfMs = [...grid["grand-final"].values()].flat();
     gfMs.forEach((m, i) => {
         layout.push({
-            ...m,
-            col: gfCol,
-            row: i,
-            section: "grand-final",
+            ...m, col: gfCol, row: i, section: "grand-final",
             x: gfCol * colW,
             y: totalH / 2 - (gfMs.length * (CARD_H + ROW_GAP)) / 2 + i * (CARD_H + ROW_GAP),
         });
@@ -255,17 +236,66 @@ function DownstreamWarning({ onConfirm, onCancel }: { onConfirm: () => void; onC
                     </p>
                 </div>
                 <div className="flex gap-2 justify-end">
-                    <button
-                        onClick={onCancel}
-                        className="px-3 py-1.5 text-xs rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors"
-                    >
+                    <button onClick={onCancel} className="px-3 py-1.5 text-xs rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors">
                         Cancel
                     </button>
-                    <button
-                        onClick={onConfirm}
-                        className="px-3 py-1.5 text-xs rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
-                    >
+                    <button onClick={onConfirm} className="px-3 py-1.5 text-xs rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
                         Clear & move
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Winner picker modal ──────────────────────────────────────────────────────
+
+function WinnerPickerModal({
+    match,
+    onPick,
+    onCancel,
+}: {
+    match: BracketMatch;
+    onPick: (winner: Team) => void;
+    onCancel: () => void;
+}) {
+    const canPick = match.team1 && match.team2;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-white">Pick the winner</p>
+                    {match.label && (
+                        <p className="text-xs text-gray-500 uppercase tracking-widest">{match.label}</p>
+                    )}
+                </div>
+                {canPick ? (
+                    <div className="flex flex-col gap-2">
+                        {([match.team1, match.team2] as Team[]).map((team) => (
+                            <button
+                                key={team.Id}
+                                onClick={() => onPick(team)}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-700 hover:border-red-500/50 hover:bg-red-500/10 text-left transition-all group"
+                            >
+                                <div className="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-red-500 transition-colors shrink-0" />
+                                <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                    {team.Name}
+                                </span>
+                                <span className="ml-auto text-xs text-gray-600 group-hover:text-red-400 transition-colors">
+                                    Win →
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-xs text-gray-500 italic">
+                        Both teams must be set before picking a winner.
+                    </p>
+                )}
+                <div className="flex justify-end">
+                    <button onClick={onCancel} className="px-3 py-1.5 text-xs rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors">
+                        Cancel
                     </button>
                 </div>
             </div>
@@ -281,6 +311,7 @@ function TeamSlot({
     matchId,
     isWinner,
     editMode,
+    progressMode,
     selected,
     isValidTarget,
     onDragStart,
@@ -292,6 +323,7 @@ function TeamSlot({
     matchId: string;
     isWinner?: boolean;
     editMode: boolean;
+    progressMode: boolean;
     selected: boolean;
     isValidTarget: boolean;
     onDragStart: (ref: SlotRef) => void;
@@ -299,10 +331,8 @@ function TeamSlot({
     onClick: (ref: SlotRef) => void;
 }) {
     const ref: SlotRef = { matchId, slot };
-
     const [dragOver, setDragOver] = useState(false);
 
-    const interactive = editMode;
     const highlight = selected
         ? "ring-2 ring-red-500"
         : dragOver && isValidTarget
@@ -313,39 +343,25 @@ function TeamSlot({
 
     return (
         <div
-            draggable={interactive && !!team}
-            onDragStart={interactive && team ? () => onDragStart(ref) : undefined}
-            onDragOver={
-                interactive
-                    ? (e) => {
-                          e.preventDefault();
-                          setDragOver(true);
-                      }
-                    : undefined
-            }
-            onDragLeave={interactive ? () => setDragOver(false) : undefined}
-            onDrop={
-                interactive
-                    ? (e) => {
-                          e.preventDefault();
-                          setDragOver(false);
-                          onDrop(ref);
-                      }
-                    : undefined
-            }
-            onClick={interactive ? () => onClick(ref) : undefined}
-            className={`flex items-center gap-2 px-3 py-1.5 transition-all ${
-                isWinner ? "bg-red-500/10" : ""
-            } ${highlight} ${
-                interactive && team ? "cursor-grab active:cursor-grabbing" : ""
-            } ${interactive && isValidTarget ? "cursor-pointer" : ""} ${selected ? "bg-red-500/20" : ""}`}
+            draggable={editMode && !!team}
+            onDragStart={editMode && team ? () => onDragStart(ref) : undefined}
+            onDragOver={editMode ? (e) => { e.preventDefault(); setDragOver(true); } : undefined}
+            onDragLeave={editMode ? () => setDragOver(false) : undefined}
+            onDrop={editMode ? (e) => { e.preventDefault(); setDragOver(false); onDrop(ref); } : undefined}
+            onClick={editMode || progressMode ? () => onClick(ref) : undefined}
+            className={`flex items-center gap-2 px-3 py-1.5 transition-all
+                ${isWinner ? "bg-red-500/10" : ""}
+                ${highlight}
+                ${editMode && team ? "cursor-grab active:cursor-grabbing" : ""}
+                ${editMode && isValidTarget ? "cursor-pointer" : ""}
+                ${progressMode && team ? "cursor-pointer hover:bg-white/5" : ""}
+                ${selected ? "bg-red-500/20" : ""}
+            `}
         >
             {team ? (
                 <>
                     {isWinner && <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
-                    <span
-                        className={`text-xs font-medium truncate flex-1 ${isWinner ? "text-white" : "text-gray-300"}`}
-                    >
+                    <span className={`text-xs font-medium truncate flex-1 ${isWinner ? "text-white" : "text-gray-300"}`}>
                         {team.Name}
                     </span>
                     {isWinner && <span className="ml-auto text-xs text-red-400">✓</span>}
@@ -362,56 +378,74 @@ function TeamSlot({
 function MatchCard({
     match,
     style,
-    editMode,
+    mode,
     selectedSlot,
     dragSourceSlot,
     onDragStart,
     onDrop,
     onSlotClick,
+    onMatchClick,
 }: {
     match: LayoutMatch;
     style?: React.CSSProperties;
-    editMode: boolean;
+    mode: BracketMode;
     selectedSlot: SlotRef | null;
     dragSourceSlot: SlotRef | null;
     onDragStart: (ref: SlotRef) => void;
     onDrop: (ref: SlotRef) => void;
     onSlotClick: (ref: SlotRef) => void;
+    onMatchClick: (matchId: string) => void;
 }) {
     const isGrandFinal = match.section === "grand-final";
     const isLosers = match.section === "losers";
+    const editMode = mode === "edit";
+    const progressMode = mode === "progress";
 
     const isValidTarget = (slot: "team1" | "team2") => {
         if (!editMode) return false;
         const sourceRef = selectedSlot ?? dragSourceSlot;
         if (!sourceRef) return false;
-        // Can't target itself
         if (sourceRef.matchId === match.matchId && sourceRef.slot === slot) return false;
-        // Only allow swapping into a slot that already has a team
         if (!match[slot]) return false;
         return true;
     };
 
+    // In progress mode, clicking the label/header area navigates to the match
+    const hasResult = !!match.winner;
+
     return (
         <div
             style={{ width: CARD_W, ...style }}
-            className={`absolute rounded-lg overflow-hidden border transition-all ${
-                isGrandFinal ? "border-red-500/50" : isLosers ? "border-gray-600/50" : "border-gray-700/60"
-            } bg-gray-900 ${editMode ? "shadow-lg shadow-black/30" : ""}`}
+            className={`absolute rounded-lg overflow-hidden border transition-all
+                ${isGrandFinal ? "border-red-500/50" : isLosers ? "border-gray-600/50" : "border-gray-700/60"}
+                bg-gray-900
+                ${editMode ? "shadow-lg shadow-black/30" : ""}
+                ${progressMode && !hasResult ? "hover:border-gray-500" : ""}
+            `}
         >
-            {(match.label || isGrandFinal) && (
+            {/* Header — click to open match edit page */}
+            <div
+                onClick={() => onMatchClick(match.matchId)}
+                className={`px-3 py-0.5 text-[10px] uppercase tracking-widest font-medium border-b flex items-center justify-between group
+                    ${isGrandFinal ? "text-red-400 border-red-500/30 bg-red-500/5" : isLosers ? "text-gray-500 border-gray-700" : "text-gray-500 border-gray-800"}
+                    ${match.label || isGrandFinal ? "" : "hidden"}
+                    cursor-pointer hover:opacity-80 transition-opacity
+                `}
+            >
+                <span>{match.label ?? "Grand Final"}</span>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px]">↗</span>
+            </div>
+
+            {/* If no label but in any mode, show a minimal clickable area for navigation */}
+            {!match.label && !isGrandFinal && (
                 <div
-                    className={`px-3 py-0.5 text-[10px] uppercase tracking-widest font-medium border-b ${
-                        isGrandFinal
-                            ? "text-red-400 border-red-500/30 bg-red-500/5"
-                            : isLosers
-                              ? "text-gray-500 border-gray-700"
-                              : "text-gray-500 border-gray-800"
-                    }`}
+                    onClick={() => onMatchClick(match.matchId)}
+                    className="absolute top-0 right-0 w-5 h-5 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer z-10"
                 >
-                    {match.label ?? "Grand Final"}
+                    <span className="text-[9px] text-gray-500">↗</span>
                 </div>
             )}
+
             <div className="divide-y divide-gray-800">
                 {(["team1", "team2"] as const).map((slot) => (
                     <TeamSlot
@@ -421,6 +455,7 @@ function MatchCard({
                         matchId={match.matchId}
                         isWinner={!!(match.winner && match[slot] && match.winner.Id === match[slot]!.Id)}
                         editMode={editMode}
+                        progressMode={progressMode}
                         selected={!!(selectedSlot?.matchId === match.matchId && selectedSlot?.slot === slot)}
                         isValidTarget={isValidTarget(slot)}
                         onDragStart={onDragStart}
@@ -438,7 +473,8 @@ function MatchCard({
 function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW: number; totalH: number }) {
     const byId = new Map(layout.map((m) => [m.matchId, m]));
     const lines: React.ReactNode[] = [];
-    if (!ENABLE_CONNECTORS) return;
+    if (!ENABLE_CONNECTORS) return null;
+
     for (const m of layout) {
         const srcX = m.x + CARD_W;
         const srcY = m.y + CARD_H / 2;
@@ -450,14 +486,9 @@ function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW:
                 const tgtY = target.y + CARD_H / 2;
                 const mx = (srcX + tgtX) / 2;
                 lines.push(
-                    <path
-                        key={`w-${m.matchId}`}
-                        d={`M${srcX},${srcY} C${mx},${srcY} ${mx},${tgtY} ${tgtX},${tgtY}`}
-                        fill="none"
-                        stroke={m.section === "grand-final" ? "#ef4444" : "#4b5563"}
-                        strokeWidth={m.section === "grand-final" ? 1.5 : 1}
-                        opacity={0.6}
-                    />,
+                    <path key={`w-${m.matchId}`} d={`M${srcX},${srcY} C${mx},${srcY} ${mx},${tgtY} ${tgtX},${tgtY}`}
+                        fill="none" stroke={m.section === "grand-final" ? "#ef4444" : "#4b5563"}
+                        strokeWidth={m.section === "grand-final" ? 1.5 : 1} opacity={0.6} />,
                 );
             }
         }
@@ -468,26 +499,15 @@ function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW:
                 const tgtY = target.y + CARD_H / 2;
                 const mx = (srcX + tgtX) / 2;
                 lines.push(
-                    <path
-                        key={`l-${m.matchId}`}
-                        d={`M${srcX},${srcY} C${mx},${srcY} ${mx},${tgtY} ${tgtX},${tgtY}`}
-                        fill="none"
-                        stroke="#6b7280"
-                        strokeWidth={1}
-                        strokeDasharray="4 3"
-                        opacity={0.4}
-                    />,
+                    <path key={`l-${m.matchId}`} d={`M${srcX},${srcY} C${mx},${srcY} ${mx},${tgtY} ${tgtX},${tgtY}`}
+                        fill="none" stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.4} />,
                 );
             }
         }
     }
 
     return (
-        <svg
-            style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }}
-            width={totalW}
-            height={totalH}
-        >
+        <svg style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }} width={totalW} height={totalH}>
             {lines}
         </svg>
     );
@@ -498,24 +518,26 @@ function Connectors({ layout, totalW, totalH }: { layout: LayoutMatch[]; totalW:
 export function BracketView({
     matches: initialMatches,
     onChange,
+    allowProgress = false,
 }: {
     matches: BracketMatch[];
     onChange?: (matches: BracketMatch[]) => void;
+    allowProgress?: boolean;
 }) {
+    const navigate = useNavigate();
+
+    if (initialMatches.length === 0) {
+        return <div className="text-xs text-gray-600 italic">No bracket to display</div>;
+    }
+
     const [matches, setMatches] = useState<BracketMatch[]>(initialMatches);
-    const [editMode, setEditMode] = useState(false);
+    const [mode, setMode] = useState<BracketMode>("view");
     const [selectedSlot, setSelectedSlot] = useState<SlotRef | null>(null);
     const dragSourceSlot = useRef<SlotRef | null>(null);
-
-    // Pending swap waiting for user confirmation
-    const [pendingSwap, setPendingSwap] = useState<{
-        from: SlotRef;
-        to: SlotRef;
-        downstreamIds: string[];
-    } | null>(null);
+    const [pendingSwap, setPendingSwap] = useState<{ from: SlotRef; to: SlotRef; downstreamIds: string[] } | null>(null);
+    const [pendingWinnerPick, setPendingWinnerPick] = useState<BracketMatch | null>(null);
 
     const layout = useMemo(() => layoutMatches(matches), [matches]);
-
     const totalW = Math.max(...layout.map((m) => m.x + CARD_W)) + COL_GAP;
     const totalH = Math.max(...layout.map((m) => m.y + CARD_H)) + 40;
 
@@ -524,7 +546,8 @@ export function BracketView({
         onChange?.(next);
     };
 
-    // Perform the actual swap between two slots
+    // ── Edit mode: swap ───────────────────────────────────────────────────────
+
     const doSwap = (from: SlotRef, to: SlotRef, clearedMatches: BracketMatch[]) => {
         const fromMatch = clearedMatches.find((m) => m.matchId === from.matchId)!;
         const toMatch = clearedMatches.find((m) => m.matchId === to.matchId)!;
@@ -532,10 +555,8 @@ export function BracketView({
         const toTeam = toMatch[to.slot];
 
         const next = clearedMatches.map((m) => {
-            if (m.matchId === from.matchId && m.matchId === to.matchId) {
-                // Both slots are in the same match — apply both changes at once
+            if (m.matchId === from.matchId && m.matchId === to.matchId)
                 return { ...m, [from.slot]: toTeam, [to.slot]: fromTeam };
-            }
             if (m.matchId === from.matchId) return { ...m, [from.slot]: toTeam };
             if (m.matchId === to.matchId) return { ...m, [to.slot]: fromTeam };
             return m;
@@ -546,58 +567,95 @@ export function BracketView({
         dragSourceSlot.current = null;
     };
 
-    // Entry point for any move attempt — checks for downstream results
     const attemptSwap = (from: SlotRef, to: SlotRef) => {
         if (from.matchId === to.matchId && from.slot === to.slot) return;
-
-        const fromDownstream = getDownstreamIds(from.matchId, matches);
-        const toDownstream = getDownstreamIds(to.matchId, matches);
-        const allDownstream = [...new Set([...fromDownstream, ...toDownstream])];
-
-        // if (hasDownstreamResults(allDownstream, matches)) {
-        //     setPendingSwap({ from, to, downstreamIds: allDownstream });
-        // } else {
-        doSwap(from, to, matches);
-        // }
+        const allDownstream = [...new Set([...getDownstreamIds(from.matchId, matches), ...getDownstreamIds(to.matchId, matches)])];
+        if (hasDownstreamResults(allDownstream, matches)) {
+            setPendingSwap({ from, to, downstreamIds: allDownstream });
+        } else {
+            doSwap(from, to, matches);
+        }
     };
 
-    // Drag handlers
-    const handleDragStart = (ref: SlotRef) => {
-        dragSourceSlot.current = ref;
-        setSelectedSlot(null);
-    };
+    const handleDragStart = (ref: SlotRef) => { dragSourceSlot.current = ref; setSelectedSlot(null); };
 
     const handleDrop = (ref: SlotRef) => {
         if (!dragSourceSlot.current) return;
         const target = matches.find((m) => m.matchId === ref.matchId);
-        if (!target?.[ref.slot]) {
-            dragSourceSlot.current = null;
-            return;
-        }
+        if (!target?.[ref.slot]) { dragSourceSlot.current = null; return; }
         attemptSwap(dragSourceSlot.current, ref);
         dragSourceSlot.current = null;
     };
 
-    // Click-to-select handlers
     const handleSlotClick = (ref: SlotRef) => {
+        // Progress mode — open winner picker for the match
+        if (mode === "progress") {
+            const match = matches.find((m) => m.matchId === ref.matchId);
+            if (!match) return;
+            setPendingWinnerPick(match);
+            return;
+        }
+
+        // Edit mode — click-to-swap
         const clickedMatch = matches.find((m) => m.matchId === ref.matchId);
         const clickedTeam = clickedMatch?.[ref.slot];
-
         if (!selectedSlot) {
-            // Only select if the slot has a team
             if (!clickedTeam) return;
             setSelectedSlot(ref);
         } else if (selectedSlot.matchId === ref.matchId && selectedSlot.slot === ref.slot) {
-            // Clicking same slot deselects
             setSelectedSlot(null);
         } else {
-            // Only swap if destination also has a team
-            if (!clickedTeam) {
-                setSelectedSlot(null);
-                return;
-            }
+            if (!clickedTeam) { setSelectedSlot(null); return; }
             attemptSwap(selectedSlot, ref);
         }
+    };
+
+    // ── Progress mode: pick winner ────────────────────────────────────────────
+
+    const handlePickWinner = (match: BracketMatch, winner: Team) => {
+        const loser = match.team1?.Id === winner.Id ? match.team2 : match.team1;
+
+        let next = matches.map((m) =>
+            m.matchId === match.matchId ? { ...m, winner, loser } : m,
+        );
+
+        // Advance winner to next match
+        if (match.winnerNextMatchId) {
+            next = next.map((m) => {
+                if (m.matchId !== match.winnerNextMatchId) return m;
+                // Place in whichever slot is empty
+                if (!m.team1) return { ...m, team1: winner };
+                if (!m.team2) return { ...m, team2: winner };
+                return m;
+            });
+        }
+
+        // Advance loser to next match
+        if (match.loserNextMatchId && loser) {
+            next = next.map((m) => {
+                if (m.matchId !== match.loserNextMatchId) return m;
+                if (!m.team1) return { ...m, team1: loser };
+                if (!m.team2) return { ...m, team2: loser };
+                return m;
+            });
+        }
+
+        updateMatches(next);
+        setPendingWinnerPick(null);
+    };
+
+    // ── Navigate to match edit page ───────────────────────────────────────────
+
+    const handleMatchClick = (matchId: string) => {
+        navigate(`/matches/${matchId}/edit`); // TODO: populate with actual route
+    };
+
+    // ── Mode switching ────────────────────────────────────────────────────────
+
+    const setModeTo = (next: BracketMode) => {
+        setMode(next);
+        setSelectedSlot(null);
+        dragSourceSlot.current = null;
     };
 
     const hasLosers = layout.some((m) => m.section === "losers");
@@ -607,29 +665,43 @@ export function BracketView({
     return (
         <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+                {/* Edit mode toggle */}
                 <button
-                    onClick={() => {
-                        setEditMode((e) => !e);
-                        setSelectedSlot(null);
-                        dragSourceSlot.current = null;
-                    }}
+                    onClick={() => setModeTo(mode === "edit" ? "view" : "edit")}
                     className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-all ${
-                        editMode
+                        mode === "edit"
                             ? "bg-red-500/10 border-red-500/50 text-red-400"
                             : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
                     }`}
                 >
-                    <span>{editMode ? "✎" : "✎"}</span>
-                    {editMode ? "Exit edit mode" : "Edit bracket"}
+                    <span>✎</span>
+                    {mode === "edit" ? "Exit edit mode" : "Edit bracket"}
                 </button>
 
-                {editMode && (
+                {/* Progress mode toggle — only shown if allowProgress */}
+                {allowProgress && (
+                    <button
+                        onClick={() => setModeTo(mode === "progress" ? "view" : "progress")}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                            mode === "progress"
+                                ? "bg-green-500/10 border-green-500/50 text-green-400"
+                                : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
+                        }`}
+                    >
+                        <span>▶</span>
+                        {mode === "progress" ? "Exit progress mode" : "Progress bracket"}
+                    </button>
+                )}
+
+                {/* Context hint */}
+                {mode === "edit" && (
                     <p className="text-xs text-gray-500">
-                        {selectedSlot
-                            ? "Now click a second slot to swap"
-                            : "Click a team slot to select it, or drag and drop"}
+                        {selectedSlot ? "Now click a second slot to swap" : "Click a slot to select, or drag and drop"}
                     </p>
+                )}
+                {mode === "progress" && (
+                    <p className="text-xs text-gray-500">Click any match to pick the winner</p>
                 )}
             </div>
 
@@ -638,18 +710,13 @@ export function BracketView({
                 <div style={{ width: totalW, height: totalH, position: "relative" }}>
                     <Connectors layout={layout} totalW={totalW} totalH={totalH} />
 
-                    {/* Section labels */}
-                    <div
-                        style={{ position: "absolute", top: winnersY - 20, left: 0 }}
-                        className="text-[10px] uppercase tracking-widest text-gray-600 font-medium"
-                    >
+                    <div style={{ position: "absolute", top: winnersY - 20, left: 0 }}
+                        className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">
                         Winners bracket
                     </div>
                     {losersY !== null && (
-                        <div
-                            style={{ position: "absolute", top: losersY - 20, left: 0 }}
-                            className="text-[10px] uppercase tracking-widest text-gray-600 font-medium"
-                        >
+                        <div style={{ position: "absolute", top: losersY - 20, left: 0 }}
+                            className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">
                             Losers bracket
                         </div>
                     )}
@@ -659,18 +726,19 @@ export function BracketView({
                             key={m.matchId}
                             match={m}
                             style={{ position: "absolute", top: m.y, left: m.x }}
-                            editMode={editMode}
+                            mode={mode}
                             selectedSlot={selectedSlot}
                             dragSourceSlot={dragSourceSlot.current}
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onSlotClick={handleSlotClick}
+                            onMatchClick={handleMatchClick}
                         />
                     ))}
                 </div>
             </div>
 
-            {/* Warning modal */}
+            {/* Edit mode: downstream warning */}
             {pendingSwap && (
                 <DownstreamWarning
                     onConfirm={() => {
@@ -683,6 +751,15 @@ export function BracketView({
                         setSelectedSlot(null);
                         dragSourceSlot.current = null;
                     }}
+                />
+            )}
+
+            {/* Progress mode: winner picker */}
+            {pendingWinnerPick && (
+                <WinnerPickerModal
+                    match={pendingWinnerPick}
+                    onPick={(winner) => handlePickWinner(pendingWinnerPick, winner)}
+                    onCancel={() => setPendingWinnerPick(null)}
                 />
             )}
         </div>

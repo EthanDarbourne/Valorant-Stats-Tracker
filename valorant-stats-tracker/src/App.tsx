@@ -1,11 +1,11 @@
 import { Routes, Route } from "react-router-dom";
 import HomePage from "./HomePage";
 import AddGamePage from "./AddGamePage";
-import AddTournaments from "./AddTournamentsPage";
-// import EditTournament from './EditTournamentPage';
-import EditTournamentResults from './EditTournamentResultsPage';
+import AddTournaments from "./ViewTournamentsPage";
 import EditTeamPage from "./EditTeamPage";
 import CreateTournamentPage from "./CreateTournamentPage";
+import EditTournamentPage from "./EditTournamentPage";
+import ValorantNotes from "./ValorantNotesPage";
 
 // Inside Routes
 export default function App() {
@@ -16,8 +16,8 @@ export default function App() {
       <Route path="/add-tournaments" element={<AddTournaments />} />
       <Route path="/create-tournament" element={<CreateTournamentPage />} />
       
-      {/* <Route path="/edit-tournament/:id" element={<EditTournament />} /> */}
-      <Route path="/edit-tournament-results/:id" element={<EditTournamentResults />} />
+      <Route path="/edit-tournament/:id" element={<EditTournamentPage />} />
+      <Route path="/notes" element={<ValorantNotes />} />
 
 
       <Route path="/edit-teams" element={<EditTeamPage />} />
