@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchGamesByTournamentIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags } from '../../shared/ApiRoutes';
+import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags, FetchMatchesByTournamentIdRoute } from '../../shared/ApiRoutes';
 import { DefaultTournament, TournamentInfo, EntireTournament, EntireTournamentSchema, TournamentInfoArraySchema } from "../../shared/TournamentSchema";
-import { GameArray, GameArraySchema } from "../../shared/GameSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
 import { PlayerArray, PlayerArraySchema } from "../../shared/PlayerSchema";
+import { TournamentMatchArraySchema, TournamentMatchArray } from "../../shared/TournamentMatchSchema";
 import { PORT, Regions } from "./Constants";
 import { Note, Tag } from "../../shared/NotesSchema";
 import { TagCategory } from "./ValorantNotesPage";
@@ -176,17 +176,17 @@ export function useTournamentById(id: number) {
     return [tournament, setTournament] as const;
 }
 
-export function useTournamentGamesById(tournamentId: number) {
-    const [games, setGames] = useState<GameArray>([]);
+export function useTournamentMatchesById(tournamentId: number) {
+    const [games, setGames] = useState<TournamentMatchArray>([]);
     useEffect(() => {
-        if(tournamentId < 0)return;
-        fetch(`http://localhost:${PORT}${FetchGamesByTournamentIdRoute}?TournamentId=${encodeURIComponent(tournamentId.toString())}`)
+        if(tournamentId < 0) return;
+        fetch(`http://localhost:${PORT}${FetchMatchesByTournamentIdRoute}?TournamentId=${encodeURIComponent(tournamentId.toString())}`)
         .then((res) => {
             if (!res.ok) throw new Error(`Failed to fetch tournament games with id ${tournamentId}`);
             return res.json();
         })
         .then((data) => {
-            const result = GameArraySchema.safeParse(data);
+            const result = TournamentMatchArraySchema.safeParse(data);
             if (result.success) {
                 setGames(result.data);
             } else {

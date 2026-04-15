@@ -38,7 +38,6 @@ router.post(PostNotes, async (req: Request, res: Response) => {
 
 router.get(FetchAllTags, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
-    console.log("Fetching");
     await MakeCallWithDatabaseResult(async () => await GetAllTags(qb), res, "FetchAllTags");
 });
 

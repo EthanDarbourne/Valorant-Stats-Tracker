@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
-import { DeleteTournamentRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, PostTournamentRoute } from "../../../shared/ApiRoutes";
+import { DeleteTournamentRoute, FetchAllTournamentsRoute, FetchMatchesByTournamentIdRoute, FetchTournamentByIdRoute, PostTournamentRoute } from "../../../shared/ApiRoutes";
 import pool from '../db';
 import { MakeCallWithDatabaseResult, RESPONSE_CREATED, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { QueryBuilder } from '../QueryBuilder';
-import { SelectTeamIdsByName, TeamIdentity } from '../TableSchemas/TeamsTable';
+import { TeamIdentity } from '../TableSchemas/TeamsTable';
 import { DeleteAllTournamentMatches, InsertTournamentMatches, SelectMatchesByTournamentId } from '../TableSchemas/TournamentMatchesTable';
 import { DeleteResultsForTournamentId, InsertAllTournamentResult, InsertTournamentResult, GetTeamsByTournamentId as SelectPlacementsByTournamentId } from '../TableSchemas/TournamentResultsTable';
 import { DeleteTournament, EntireTournament, EntireTournamentSchema, GetAllTournaments, GetTournamentById, InsertTournament, TeamInfo } from '../TableSchemas/TournamentsTable';
@@ -55,6 +55,22 @@ router.get(FetchTournamentByIdRoute, async (req: Request, res: Response) => {
 
 });
 
+router.get(FetchMatchesByTournamentIdRoute, async (req: Request, res: Response) => {
+    
+    try {
+        const qb = new QueryBuilder(pool);
+        
+        const tournamentId = Number(req.query.TournamentId as string);
+
+        const matches = await SelectMatchesByTournamentId(qb, tournamentId);
+
+        SetResponse(res, RESPONSE_OK, matches);
+    }
+    catch (error) {
+        SetResponse(res, RESPONSE_INTERNAL_ERROR);
+    }
+});
+
 router.post(PostTournamentRoute, async (req: Request, res: Response) => { 
     const qb = new QueryBuilder(pool);
     try {
@@ -68,7 +84,6 @@ router.post(PostTournamentRoute, async (req: Request, res: Response) => {
         const tournamentId = await InsertTournament(qb, tournamentInfo);
 
         // save all placements
-        console.log(Placements);
         const resultRows = Placements.map(x => ({TournamentId: tournamentId, TeamId: x.TeamId, Placement: x.Placement, Seed: x.Seed }));
         await InsertAllTournamentResult(qb, resultRows);
 

@@ -26,8 +26,8 @@ AddTournamentsPage:
 Make home button visible on AddTournamentsPage
 
 
-EditTournamentPage:
-
+ViewTournamentPage:
+Make delete call backend, behind a safeguard/popup
 
 
 EditTournamentResultsPage:

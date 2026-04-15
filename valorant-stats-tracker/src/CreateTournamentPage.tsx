@@ -143,12 +143,13 @@ function generateGroupStage(groups: Team[][], playWithinGroup: boolean): Bracket
     }
     function CreateMatch(team1: Team, team2: Team): BracketMatch {
         return {
-            matchId: team1.Name + team2.Name,
-
+            matchId: team1.Name + ' ' + team2.Name,
             team1: team1,
             team2: team2,
             winnerNextMatchId: null,
             loserNextMatchId: null,
+            label: "Group Stage",
+            mapCount: 3
         };
     }
 
@@ -1037,14 +1038,13 @@ export default function CreateTournamentPage() {
             };
             const response = await createTournament(entireTournament);
             console.log("Saved tournament:", response);
-            navigate("/add-tournaments");
         } 
         catch (error) {
             console.log(error);
-            navigate("/add-tournaments");
         }
         finally {
             setSaving(false);
+            navigate("/add-tournaments");
         }
     };
 

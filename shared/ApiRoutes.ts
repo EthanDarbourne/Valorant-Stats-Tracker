@@ -37,13 +37,8 @@ export const FetchTeamsByTournamentIdRoute = "/api/teamsByTournamentId"
 
 // URL parameters: TournamentId
 // Request Body: None
-// Returns: GameArray
-export const FetchGamesByTournamentIdRoute = "/api/gamesByTournamentId"
-
-// URL parameters: TournamentId
-// Request Body: None
 // Returns: TournamentMatchesArray
-export const FetchMatchesByTournamentIdRoute = "/api/gamesByTournamentId"
+export const FetchMatchesByTournamentIdRoute = "/api/matchesByTournamentId"
 
 // URL parameters: None
 // Request Body: Tournament

@@ -13,7 +13,6 @@ export default function ViewTournamentsPage() {
   const handleAddTournament = () => navigate('/create-tournament');
 
   const [tournaments, setTournaments] = useTournaments();
-  console.log(tournaments)
 
   const handleRemoveTournament = (id: number) => {
     console.log("Delete tournament:", id);

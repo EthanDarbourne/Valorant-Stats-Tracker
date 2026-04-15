@@ -1,3 +1,4 @@
+import { Team } from "../../shared/TeamSchema";
 
 
 type ButtonStyleOptions = {
@@ -39,4 +40,8 @@ export function zipArrays<T, U>(arr1: T[], arr2: U[]): [T, U][] {
     // Return a tuple containing the element from each array at the same index
     return [element, arr2[index]];
   });
+}
+
+export function getTeamNamesByTeamId(teamIds: (number | null | undefined)[], teams: Team[]) {
+    return teamIds.map(x => teams.find(y => y.Id == x)?.Name ?? "");
 }
