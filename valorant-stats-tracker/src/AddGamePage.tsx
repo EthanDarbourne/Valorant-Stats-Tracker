@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogTitle, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import DragAndDropList, { DragAndDropListHandle } from "@/components/ui/DragDropList"
-import { useAgents, useMaps, useTeamsByTournamentId, useTournamentMatchesById, useTournaments } from "./ApiCallers"
+import { useAgents, useMapsInRotation, useTeamsByTournamentId, useTournamentMatchesById, useTournaments } from "./ApiCallers"
 import HomeButton from "./components/ui/HomeButton";
 import { DefaultTournament, TournamentInfo } from "../../shared/TournamentSchema";
 import { OtherMap, PlayerStats, RoundInfo, StatLine, TournamentMap } from "../../shared/EntireGameSchema";
@@ -78,7 +78,7 @@ export default function AddGamePage() {
 
   const [tournament, setTournament] = useState<TournamentInfo>(DefaultTournament);
   
-  const maps = useMaps();
+  const maps = useMapsInRotation();
   const [isGameInDatabase, setGameInDatabase] = useState<boolean>(false);
   
   const [tournaments, _] = useTournaments();

@@ -12,6 +12,7 @@ export class QueryBuilder {
     private parameters: any[] = [];
 
     private insertCount: number = 0;
+    private sortCount: number = 0;
 
     constructor(pool: Pool) {
         this.pool = pool;
@@ -191,6 +192,17 @@ export class QueryBuilder {
         return this;
     }
 
+    SortBy(column: ColumnIdentifier, direction: SortDirection) {
+        if(this.sortCount == 0) {
+            this.append(" ORDER BY ");
+        }
+        else {
+            this.append(", ");
+        }
+        this.append(`${Quote(column)} ${direction}`);
+        this.sortCount++;
+    }
+
     async BeginTransaction() {
         if(this.client == null) {
             console.trace("Beginning transaction before client connected");
@@ -269,3 +281,4 @@ export class QueryBuilder {
 type Parameter = [ColumnIdentifier, any]
 type WhereClause = [ColumnIdentifier, SQLComparator, any]; // column to compare to, comparator, parameter
 type ConflictResolution = "DO NOTHING" | "DO UPDATE"
+type SortDirection = "ASC" | "DESC"

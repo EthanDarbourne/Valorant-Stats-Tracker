@@ -97,7 +97,7 @@ export async function MakeCallWithDatabaseResult(
         SetResponse(res, goodStatus, result);
     }
     catch (error) {
-        console.log("Failed to MakeCallWithDatabaseResult " + errorMsg + error);
+        console.log("Failed to MakeCallWithDatabaseResult " + errorMsg + "with error: " + error);
         SetResponse(res, badStatus, { Error: "Error fetching from database with " + errorMsg });
     }
 }

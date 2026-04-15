@@ -19,7 +19,8 @@ export async function GetMapsList(qb: QueryBuilder): Promise<string[]> {
   qb.Select().Selectable(MapsColumns.Name)
     .From(MapsTableName)
     .WhereClause()
-    .WhereSingle([MapsColumns.Active, SQLComparator.EQUAL, true]);
+    .WhereSingle([MapsColumns.Active, SQLComparator.EQUAL, true])
+    .SortBy(MapsColumns.Name, "ASC");
   
   const result = await qb.Execute();
   return result.rows;
@@ -28,7 +29,8 @@ export async function GetMapsList(qb: QueryBuilder): Promise<string[]> {
 export async function GetAllMaps(qb: QueryBuilder): Promise<string[]> {
 
   qb.Select().Selectable(MapsColumns.Name)
-    .From(MapsTableName);
+    .From(MapsTableName)
+    .SortBy(MapsColumns.Name, "ASC");
   
   const result = await qb.Execute();
   return result.rows;

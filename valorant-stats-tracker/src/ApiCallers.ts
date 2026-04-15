@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FetchMapsRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags, FetchMatchesByTournamentIdRoute } from '../../shared/ApiRoutes';
+import { FetchMapsInRotationRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags, FetchMatchesByTournamentIdRoute, FetchAllMapsRoute } from '../../shared/ApiRoutes';
 import { DefaultTournament, TournamentInfo, EntireTournament, EntireTournamentSchema, TournamentInfoArraySchema } from "../../shared/TournamentSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
 import { PlayerArray, PlayerArraySchema } from "../../shared/PlayerSchema";
@@ -8,11 +8,30 @@ import { PORT, Regions } from "./Constants";
 import { Note, Tag } from "../../shared/NotesSchema";
 import { TagCategory } from "./ValorantNotesPage";
 
-export function useMaps() {
+export function useMapsInRotation() {
     const [maps, setMaps] = useState<string[]>([]);
 
     useEffect(() => {
-        fetch(`http://localhost:${PORT}${FetchMapsRoute}`)
+        fetch(`http://localhost:${PORT}${FetchMapsInRotationRoute}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch maps in rotation");
+            return res.json();
+        })
+        .then((data) => {
+            const mapNames = data.map((item: { Name: string }) => item.Name);
+            setMaps(mapNames);
+        })
+        .catch((err) => console.error(err))
+    }, []);
+
+    return maps;
+}
+
+export function useAllMaps() {
+    const [maps, setMaps] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAllMapsRoute}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch maps");
             return res.json();
@@ -293,7 +312,7 @@ export function useTagsByCategory() {
                 Category,
                 Tags
             }));
-            setTags(groupedTags);
+            setTags([...tags, ...groupedTags]);
         })
         .catch((err) => console.error(err))
     }, []);

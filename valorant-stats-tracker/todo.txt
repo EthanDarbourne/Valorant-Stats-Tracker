@@ -70,9 +70,11 @@ Querybuilder sets selectcount to 1000 in selectall, find better way to do this (
 Also need to reset this for nested queries.
 MakeCallWithDatabaseResult function parameter, use nameof(ROUTE)
 Possible to rollback before connected if schema parsing fails.
+Add sorting to queries
 
 Database:
 Rename all Team1/Team2 to TeamA/TeamB
+Add deleted flag to allow for soft deletes
 
 Misc:
 Use * in import

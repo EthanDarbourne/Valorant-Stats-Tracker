@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNotes, useTagsByCategory } from "./ApiCallers";
+import { useState, useRef, useEffect } from "react";
+import { useAgents, useAllMaps, useNotes, useTagsByCategory } from "./ApiCallers";
 import { Note, Tag } from "../../shared/NotesSchema";
 import HomeButton from "./components/ui/HomeButton";
 import { saveNotes, saveTags } from "./ApiPosters";
@@ -14,19 +14,7 @@ export type TagCategory = {
     Tags: string[];
 };
 
-// ─────────────────────────────────────────────
-//  CONFIGURATION — edit freely
-// ─────────────────────────────────────────────
-
 const NOTE_TYPES: NoteType[] = ["Question", "Observation", "Tip", "Mistake"];
-
-const TAG_TREE: TagCategory[] = [
-  { Category: "Clutch",        Tags: ["1v1", "1v2", "1v3", "1v4", "1v5", "2v1", "2v2", "2v3", "2v4", "2v5", "3v1", "3v2", "3v3", "3v4", "3v5", "4v1", "4v2", "4v3", "4v4", "4v5", "5v1", "5v2", "5v3", "5v4", "5v5"] },
-  { Category: "Economy",       Tags: ["Gun Round", "Anti-Eco", "Eco", "Bonus", "Full Save"] },
-  { Category: "Side",       Tags: ["Attackers", "Defenders"] },
-  { Category: "Map Area", Tags: ["A Site", "B Site", "Mid", "A Main", "B Main"] }
-];
-// all agents, all maps
 
 // ─────────────────────────────────────────────
 //  HELPERS
@@ -572,15 +560,37 @@ export default function ValorantNotes() {
 
     const nextPlaceHolderId = useRef(-1);
 
+    const agents = useAgents();
+
+    useEffect(() => {
+        if (!agents?.length) return;
+
+        setTagsByCategory((prev) => {
+            // Avoid duplicating the category on re-renders
+            const filtered = prev.filter((c) => c.Category !== "Agents");
+            return [{ Category: "Agents", Tags: agents }, ...filtered];
+        });
+    }, [agents]);
+
+    const maps = useAllMaps();
+
+    useEffect(() => {
+        if (!maps?.length) return;
+
+        setTagsByCategory((prev) => {
+            const filtered = prev.filter((c) => c.Category !== "Maps");
+            return [{ Category: "Maps", Tags: maps }, ...filtered];
+        });
+    }, [maps]);
+
     const saveAll = async () => {
-        if(newTags.length > 0) {
+        if (newTags.length > 0) {
             await saveTags(newTags);
         }
-        if(newOrEditedNotes.length > 0) {
+        if (newOrEditedNotes.length > 0) {
             await saveNotes(notes);
         }
     };
-
 
     function toggleSidebarTag(tag: string): void {
         setSelectedTags((prev) => {
@@ -626,7 +636,9 @@ export default function ValorantNotes() {
         console.log("Saving note", note, editNote);
         const updated = editNote ? notes.map((n) => (n.Id === note.Id ? note : n)) : [note, ...notes];
         setNotes(updated);
-        setNewOrEditedNotes(editNote ? newOrEditedNotes.map((n) => (n.Id === note.Id ? note : n)) : [note, ...newOrEditedNotes]);
+        setNewOrEditedNotes(
+            editNote ? newOrEditedNotes.map((n) => (n.Id === note.Id ? note : n)) : [note, ...newOrEditedNotes],
+        );
         closeNewNoteModal();
     }
 
@@ -691,7 +703,7 @@ export default function ValorantNotes() {
 
             <div className="flex flex-1">
                 {/* ── SIDEBAR ─────────────────────────────── */}
-                <aside className="w-56 flex-shrink-0 sticky top-[45px] self-start max-h-[calc(100vh-45px)] overflow-y-auto border-r border-gray-800 p-3 space-y-4">
+                <aside className="w-75 flex-shrink-0 sticky top-[45px] self-start max-h-[calc(100vh-45px)] overflow-y-auto border-r border-gray-800 p-3 space-y-4">
                     {/* Keyword search */}
                     <div>
                         <div className="text-[10px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">

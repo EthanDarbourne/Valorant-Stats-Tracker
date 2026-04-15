@@ -17,7 +17,8 @@ export const AgentsTableName = "Agents";
 export async function GetAgentsList(qb: QueryBuilder): Promise<string[]> {
 
   qb.Select().Selectable(AgentsColumns.Name)
-    .From(AgentsTableName);
+    .From(AgentsTableName)
+    .SortBy(AgentsColumns.Name, "ASC");
   
   const result = await qb.Execute();
   return result.rows;
@@ -28,7 +29,8 @@ export async function GetAgentsByRoleList(qb: QueryBuilder, role: string): Promi
   qb.Select().Selectable(AgentsColumns.Name)
     .From(AgentsTableName)
         .WhereClause()
-        .WhereSingle([AgentsColumns.Role, SQLComparator.EQUAL, role]);
+        .WhereSingle([AgentsColumns.Role, SQLComparator.EQUAL, role])
+        .SortBy(AgentsColumns.Name, "ASC");
   
   const result = await qb.Execute();
   return result.rows;

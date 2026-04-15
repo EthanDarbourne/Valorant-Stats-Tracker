@@ -3,12 +3,12 @@
 // URL parameters: None
 // Request Body: None
 // Returns: Array(string)
-export const FetchMapsRoute = "/api/maps"
+export const FetchMapsInRotationRoute = "/api/mapsInRotation"
 
 // URL parameters: None
 // Request Body: None
 // Returns: Array(string)
-export const FetchAllMapsRoute = "/api/allMaps"
+export const FetchAllMapsRoute = "/api/maps"
 
 // URL parameters: None
 // Request Body: None
