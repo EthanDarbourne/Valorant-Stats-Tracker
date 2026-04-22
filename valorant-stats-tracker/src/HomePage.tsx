@@ -14,6 +14,7 @@ export default function HomePage() {
         <Button onClick={() => navigate("/add-game")}>Add Game</Button>
         <Button onClick={() => navigate("/edit-teams")}>Edit Teams</Button>
         <Button onClick={() => navigate("/notes")}>Take Notes</Button>
+        <Button onClick={() => navigate("/edit-assets")}>Create Assets</Button>
       </div>
 
       {games.length === 0 ? (

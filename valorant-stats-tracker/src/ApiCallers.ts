@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FetchMapsInRotationRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags, FetchMatchesByTournamentIdRoute, FetchAllMapsRoute } from '../../shared/ApiRoutes';
+import { FetchMapsInRotationRoute, FetchTeamsByRegionRoute, FetchTeamsByTournamentIdRoute, FetchAllTournamentsRoute, FetchTournamentByIdRoute, FetchAllPlayersWithoutTeams, FetchAgentsRoute, FetchAgentsByRoleRoute, FetchTeamsByTeamNameRoute, FetchAllNotes, FetchAllTags, FetchMatchesByTournamentIdRoute, FetchAllMapsRoute, FetchAgentRoles } from '../../shared/ApiRoutes';
 import { DefaultTournament, TournamentInfo, EntireTournament, EntireTournamentSchema, TournamentInfoArraySchema } from "../../shared/TournamentSchema";
 import { TeamArray, TeamArraySchema } from "../../shared/TeamSchema";
 import { PlayerArray, PlayerArraySchema } from "../../shared/PlayerSchema";
@@ -7,6 +7,7 @@ import { TournamentMatchArraySchema, TournamentMatchArray } from "../../shared/T
 import { PORT, Regions } from "./Constants";
 import { Note, Tag } from "../../shared/NotesSchema";
 import { TagCategory } from "./ValorantNotesPage";
+import { Map, MapSchema } from "../../shared/AssetSchema";
 
 export function useMapsInRotation() {
     const [maps, setMaps] = useState<string[]>([]);
@@ -28,22 +29,45 @@ export function useMapsInRotation() {
 }
 
 export function useAllMaps() {
-    const [maps, setMaps] = useState<string[]>([]);
+    const [maps, setMaps] = useState<Map[]>([]);
 
-    useEffect(() => {
+    const fetchMaps = () => {
         fetch(`http://localhost:${PORT}${FetchAllMapsRoute}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch maps");
             return res.json();
         })
         .then((data) => {
-            const mapNames = data.map((item: { Name: string }) => item.Name);
-            setMaps(mapNames);
+            const maps = data.map(MapSchema.parse);
+            setMaps(maps);
+        })
+        .catch((err) => console.error(err))
+    };
+
+    useEffect(() => {
+        fetchMaps();
+    }, []);
+
+    return [maps, fetchMaps] as const;
+}
+
+export function useRoles() {
+    const [roles, setRoles] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch(`http://localhost:${PORT}${FetchAgentRoles}`)
+        .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch roles");
+            return res.json();
+        })
+        .then((data) => {
+            const roleNames = data.map((item: { Role: string }) => item.Role);
+            setRoles(roleNames);
         })
         .catch((err) => console.error(err))
     }, []);
 
-    return maps;
+    return roles;
 }
 
 export function useTeamsByRegion(region: Regions) {
@@ -222,7 +246,7 @@ export function useTournamentMatchesById(tournamentId: number) {
 export function useAgents() {
     const [agents, setAgents] = useState<string[]>([]);
 
-    useEffect(() => {
+    const fetchAgents = () => {
         fetch(`http://localhost:${PORT}${FetchAgentsRoute}`)
         .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch agents");
@@ -233,9 +257,13 @@ export function useAgents() {
             setAgents(agentNames);
         })
         .catch((err) => console.error(err))
+    }
+
+    useEffect(() => {
+        fetchAgents();
     }, []);
 
-    return agents;
+    return [agents, fetchAgents] as const;
 }
 
 export function useAgentsByRole(role: string) {

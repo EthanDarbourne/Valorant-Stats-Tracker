@@ -6,6 +6,7 @@ import EditTeamPage from "./EditTeamPage";
 import CreateTournamentPage from "./CreateTournamentPage";
 import EditTournamentPage from "./EditTournamentPage";
 import ValorantNotes from "./ValorantNotesPage";
+import CreateMapOrAgentPage from "./CreateMapOrAgentPage";
 
 // Inside Routes
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
       
       <Route path="/edit-tournament/:id" element={<EditTournamentPage />} />
       <Route path="/notes" element={<ValorantNotes />} />
+      <Route path="/edit-assets" element={<CreateMapOrAgentPage />} />
 
 
       <Route path="/edit-teams" element={<EditTeamPage />} />

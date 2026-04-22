@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { GetAllMaps, GetMapsList as GetMapsInRotation } from '../TableSchemas/MapsTable';
+import { GetAllMaps, GetMapsList as GetMapsInRotation, MapArraySchema, UpdateMapsList } from '../TableSchemas/MapsTable';
 import { MakeCallWithDatabaseResult, RESPONSE_BAD_REQUEST, RESPONSE_INTERNAL_ERROR, RESPONSE_OK, SetResponse } from '../Helpers';
 import { QueryBuilder } from '../QueryBuilder';
 import pool from '../db';
-import { FetchAllMapsRoute, FetchMapsInRotationRoute, PostTournamentMap } from '../../../shared/ApiRoutes';
+import { FetchAllMapsRoute, FetchMapsInRotationRoute, PostTournamentMap, UpdateMaps } from '../../../shared/ApiRoutes';
 import { RoundEventRow, InsertRoundEvents } from '../TableSchemas/RoundEventsTable';
 import { RoundRow, InsertRounds } from '../TableSchemas/RoundsTable';
 import { PlayerStats, TournamentMap, TournamentMapSchema } from '../../../shared/EntireGameSchema';
@@ -20,6 +20,30 @@ router.get(FetchMapsInRotationRoute, async (req: Request, res: Response) => {
 router.get(FetchAllMapsRoute, async (req: Request, res: Response) => {
     const qb = new QueryBuilder(pool);
     await MakeCallWithDatabaseResult(async () => await GetAllMaps(qb), res, "GetAllMaps");
+});
+
+router.post(UpdateMaps, async (req: Request, res: Response) => {
+    const qb = new QueryBuilder(pool);
+    try {
+        await qb.Connect();
+        await qb.BeginTransaction();
+        const parsed = MapArraySchema.safeParse(req.body);
+        if(!parsed.success) {
+            SetResponse(res, RESPONSE_BAD_REQUEST, { error: "Invalid map data", details: parsed.error.errors });
+            return;
+        }
+        await UpdateMapsList(qb, parsed.data);
+        await qb.Commit();
+        SetResponse(res, RESPONSE_OK, { message: "Updated maps successfully" });
+    }
+    catch (error) {
+        console.log(error);
+        SetResponse(res, RESPONSE_INTERNAL_ERROR, { error: "Failed to update maps" });
+        await qb.Rollback();
+    }
+    finally {
+        await qb.Disconnect();
+    }
 });
 
 router.post(PostTournamentMap, async (req: Request, res: Response) => {

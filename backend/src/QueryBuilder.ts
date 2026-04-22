@@ -59,8 +59,13 @@ export class QueryBuilder {
     }
 
     // todo: implement ON UPDATE AND 
-    OnConflict(conflictColumns: string[], conflictResolution: ConflictResolution) {
+    OnConflict(conflictColumns: string[], conflictResolution: ConflictResolution, columnsToSet?: string[]) {
         this.append("ON CONFLICT (" + QuoteAll(conflictColumns) + ")" + conflictResolution)
+        if(conflictResolution == "DO UPDATE") {
+            this.append(" SET ");
+            const resolutionString = columnsToSet?.map(col => `${Quote(col)}=EXCLUDED.${Quote(col)}`).join(", ") ?? "";
+            this.append(resolutionString);
+        }
     }
 
     AddValue(row: any[]) {
@@ -93,10 +98,19 @@ export class QueryBuilder {
         return this;
     }
 
-    Select() {
+    private enterSelect() {
         this.inSelect = true;
         this.selectCount = 0;
+    }
+    Select() {
+        this.enterSelect()
         this.append("SELECT ");
+        return this;
+    }
+    
+    SelectDistinct() {
+        this.enterSelect()
+        this.append("SELECT DISTINCT ");
         return this;
     }
 

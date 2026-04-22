@@ -11,10 +11,13 @@ import {
     PostTournamentRoute,
     PostTags,
     PostNotes,
+    PostAgent,
+    UpdateMaps,
 } from "../../shared/ApiRoutes";
 import { Team } from "../../shared/TeamSchema";
 import { Player } from "../../shared/PlayerSchema";
 import { Note, Tag } from "../../shared/NotesSchema";
+import { Agent, Map } from "../../shared/AssetSchema";
 
 export async function createTournament(tournament: EntireTournament) {
     const parsed = EntireTournamentSchema.safeParse(tournament);
@@ -153,6 +156,40 @@ export async function saveTags(tags: Tag[]) {
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to post tags: ${response.status} ${errorText}`);
+    }
+
+    return response;
+}
+
+export async function createAgent(agent: Agent) {
+    const response = await fetch(`http://localhost:${PORT}${PostAgent}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(agent),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to create agent: ${response.status} ${errorText}`);
+    }
+
+    return response;
+}
+
+export async function updateMaps(maps: Map[]) {
+    const response = await fetch(`http://localhost:${PORT}${UpdateMaps}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(maps),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update maps: ${response.status} ${errorText}`);
     }
 
     return response;
